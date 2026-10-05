@@ -1,0 +1,988 @@
+{
+  "trials": 400,
+  "seed": 20261105,
+  "baseStats": {
+    "atk": 16,
+    "hp": 1200,
+    "speed": 5.5
+  },
+  "timeLimitSeconds": 90,
+  "totalDraws": 33,
+  "skills": {
+    "critical": {
+      "name": "クリティカル",
+      "entries": 122,
+      "wins": 0,
+      "top5": 6,
+      "draws": 13,
+      "survivalSeconds": 3259.1333333333687,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.0305272660233182
+      ],
+      "top5Rate": 0.04918032786885246,
+      "meanSurvivalSeconds": 26.714207650273515
+    },
+    "vampire": {
+      "name": "吸収",
+      "entries": 119,
+      "wins": 0,
+      "top5": 22,
+      "draws": 12,
+      "survivalSeconds": 3796.5499999999993,
+      "winRate": 0,
+      "winInterval95": [
+        3.469446951953614e-18,
+        0.03127279358132749
+      ],
+      "top5Rate": 0.18487394957983194,
+      "meanSurvivalSeconds": 31.903781512605036
+    },
+    "dodge": {
+      "name": "回避",
+      "entries": 134,
+      "wins": 0,
+      "top5": 8,
+      "draws": 12,
+      "survivalSeconds": 3626.650000000029,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.0278696706944783
+      ],
+      "top5Rate": 0.05970149253731343,
+      "meanSurvivalSeconds": 27.064552238806186
+    },
+    "regeneration": {
+      "name": "リジェネ",
+      "entries": 132,
+      "wins": 2,
+      "top5": 34,
+      "draws": 10,
+      "survivalSeconds": 4470.166666666636,
+      "winRate": 0.015151515151515152,
+      "winInterval95": [
+        0.00416488690145933,
+        0.05356117050658061
+      ],
+      "top5Rate": 0.25757575757575757,
+      "meanSurvivalSeconds": 33.864898989898755
+    },
+    "scaling_atk": {
+      "name": "だんだん攻撃力UP",
+      "entries": 119,
+      "wins": 0,
+      "top5": 7,
+      "draws": 8,
+      "survivalSeconds": 2941.4166666666933,
+      "winRate": 0,
+      "winInterval95": [
+        3.469446951953614e-18,
+        0.03127279358132749
+      ],
+      "top5Rate": 0.058823529411764705,
+      "meanSurvivalSeconds": 24.717787114846164
+    },
+    "scaling_spd": {
+      "name": "だんだん速度UP",
+      "entries": 129,
+      "wins": 14,
+      "top5": 92,
+      "draws": 17,
+      "survivalSeconds": 5960.466666666576,
+      "winRate": 0.10852713178294573,
+      "winInterval95": [
+        0.06575537038687869,
+        0.17394062845685698
+      ],
+      "top5Rate": 0.7131782945736435,
+      "meanSurvivalSeconds": 46.20516795865563
+    },
+    "ranged_shot": {
+      "name": "遠隔射撃",
+      "entries": 125,
+      "wins": 4,
+      "top5": 17,
+      "draws": 11,
+      "survivalSeconds": 3570.8500000000067,
+      "winRate": 0.032,
+      "winInterval95": [
+        0.012512936695839402,
+        0.07939526686574319
+      ],
+      "top5Rate": 0.136,
+      "meanSurvivalSeconds": 28.566800000000054
+    },
+    "explosion": {
+      "name": "爆発",
+      "entries": 136,
+      "wins": 0,
+      "top5": 5,
+      "draws": 12,
+      "survivalSeconds": 3118.966666666686,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.02747108156657246
+      ],
+      "top5Rate": 0.03676470588235294,
+      "meanSurvivalSeconds": 22.93357843137269
+    },
+    "slow_zone": {
+      "name": "遅化ゾーン作成",
+      "entries": 120,
+      "wins": 0,
+      "top5": 30,
+      "draws": 5,
+      "survivalSeconds": 4173.883333333325,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.031020271055929513
+      ],
+      "top5Rate": 0.25,
+      "meanSurvivalSeconds": 34.782361111111044
+    },
+    "poison_zone": {
+      "name": "毒ゾーン作成",
+      "entries": 128,
+      "wins": 3,
+      "top5": 24,
+      "draws": 13,
+      "survivalSeconds": 4066.4666666666617,
+      "winRate": 0.0234375,
+      "winInterval95": [
+        0.008002271440112167,
+        0.06664488090027204
+      ],
+      "top5Rate": 0.1875,
+      "meanSurvivalSeconds": 31.769270833333294
+    },
+    "teleport": {
+      "name": "テレポート",
+      "entries": 119,
+      "wins": 0,
+      "top5": 58,
+      "draws": 6,
+      "survivalSeconds": 4255.449999999938,
+      "winRate": 0,
+      "winInterval95": [
+        3.469446951953614e-18,
+        0.03127279358132749
+      ],
+      "top5Rate": 0.48739495798319327,
+      "meanSurvivalSeconds": 35.76008403361293
+    },
+    "invincible_chance": {
+      "name": "一定確率無敵",
+      "entries": 118,
+      "wins": 2,
+      "top5": 26,
+      "draws": 15,
+      "survivalSeconds": 4030.366666666648,
+      "winRate": 0.01694915254237288,
+      "winInterval95": [
+        0.004660344845762193,
+        0.059698626146082956
+      ],
+      "top5Rate": 0.22033898305084745,
+      "meanSurvivalSeconds": 34.15564971751397
+    },
+    "shield": {
+      "name": "バリア",
+      "entries": 128,
+      "wins": 0,
+      "top5": 14,
+      "draws": 15,
+      "survivalSeconds": 4035.9166666666783,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.02913799589810803
+      ],
+      "top5Rate": 0.109375,
+      "meanSurvivalSeconds": 31.530598958333425
+    },
+    "random_lightning": {
+      "name": "ランダム雷",
+      "entries": 129,
+      "wins": 0,
+      "top5": 7,
+      "draws": 12,
+      "survivalSeconds": 3296.566666666684,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.028918651988533713
+      ],
+      "top5Rate": 0.05426356589147287,
+      "meanSurvivalSeconds": 25.55478036175724
+    },
+    "flamethrower": {
+      "name": "火炎放射",
+      "entries": 117,
+      "wins": 0,
+      "top5": 11,
+      "draws": 8,
+      "survivalSeconds": 3180.2666666666823,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.03179037682387522
+      ],
+      "top5Rate": 0.09401709401709402,
+      "meanSurvivalSeconds": 27.181766381766515
+    },
+    "giant": {
+      "name": "巨大化",
+      "entries": 124,
+      "wins": 6,
+      "top5": 66,
+      "draws": 12,
+      "survivalSeconds": 4828.48333333327,
+      "winRate": 0.04838709677419355,
+      "winInterval95": [
+        0.022362105662260094,
+        0.1015537401969907
+      ],
+      "top5Rate": 0.532258064516129,
+      "meanSurvivalSeconds": 38.939381720429594
+    },
+    "destiny_bond": {
+      "name": "道連れ",
+      "entries": 121,
+      "wins": 0,
+      "top5": 2,
+      "draws": 12,
+      "survivalSeconds": 2902.200000000032,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.03077179401737882
+      ],
+      "top5Rate": 0.01652892561983471,
+      "meanSurvivalSeconds": 23.985123966942414
+    },
+    "clone": {
+      "name": "分身",
+      "entries": 114,
+      "wins": 0,
+      "top5": 6,
+      "draws": 11,
+      "survivalSeconds": 2845.216666666696,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.03259969314741144
+      ],
+      "top5Rate": 0.05263157894736842,
+      "meanSurvivalSeconds": 24.95804093567277
+    },
+    "rainbow_beam": {
+      "name": "虹ビーム",
+      "entries": 115,
+      "wins": 0,
+      "top5": 5,
+      "draws": 9,
+      "survivalSeconds": 2909.8500000000195,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.03232538101136302
+      ],
+      "top5Rate": 0.043478260869565216,
+      "meanSurvivalSeconds": 25.30304347826104
+    },
+    "flying": {
+      "name": "飛行",
+      "entries": 109,
+      "wins": 6,
+      "top5": 54,
+      "draws": 7,
+      "survivalSeconds": 4145.233333333266,
+      "winRate": 0.05504587155963303,
+      "winInterval95": [
+        0.02546924522642792,
+        0.11491869680913343
+      ],
+      "top5Rate": 0.4954128440366973,
+      "meanSurvivalSeconds": 38.029663608562075
+    },
+    "super_knockback": {
+      "name": "超ノックバック",
+      "entries": 129,
+      "wins": 1,
+      "top5": 12,
+      "draws": 15,
+      "survivalSeconds": 3958.6833333333598,
+      "winRate": 0.007751937984496124,
+      "winInterval95": [
+        0.0013696853368445096,
+        0.04260449142706077
+      ],
+      "top5Rate": 0.09302325581395349,
+      "meanSurvivalSeconds": 30.6874677002586
+    },
+    "self_heal": {
+      "name": "自己回復",
+      "entries": 140,
+      "wins": 0,
+      "top5": 19,
+      "draws": 11,
+      "survivalSeconds": 4397.583333333334,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.02670715564899167
+      ],
+      "top5Rate": 0.1357142857142857,
+      "meanSurvivalSeconds": 31.41130952380953
+    },
+    "instant_kill": {
+      "name": "超低確率即死",
+      "entries": 105,
+      "wins": 0,
+      "top5": 3,
+      "draws": 5,
+      "survivalSeconds": 2639.033333333358,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.035295328256842964
+      ],
+      "top5Rate": 0.02857142857142857,
+      "meanSurvivalSeconds": 25.13365079365103
+    },
+    "berserk": {
+      "name": "超加速超耐久",
+      "entries": 125,
+      "wins": 0,
+      "top5": 12,
+      "draws": 11,
+      "survivalSeconds": 3745.416666666686,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.0298164567965626
+      ],
+      "top5Rate": 0.096,
+      "meanSurvivalSeconds": 29.963333333333487
+    },
+    "sonic_wave": {
+      "name": "音波攻撃",
+      "entries": 122,
+      "wins": 14,
+      "top5": 53,
+      "draws": 9,
+      "survivalSeconds": 4206.833333333303,
+      "winRate": 0.11475409836065574,
+      "winInterval95": [
+        0.06959852436764669,
+        0.18343068060113943
+      ],
+      "top5Rate": 0.4344262295081967,
+      "meanSurvivalSeconds": 34.48224043715822
+    },
+    "slash": {
+      "name": "斬撃",
+      "entries": 119,
+      "wins": 0,
+      "top5": 10,
+      "draws": 7,
+      "survivalSeconds": 3242.766666666682,
+      "winRate": 0,
+      "winInterval95": [
+        3.469446951953614e-18,
+        0.03127279358132749
+      ],
+      "top5Rate": 0.08403361344537816,
+      "meanSurvivalSeconds": 27.250140056022538
+    },
+    "tornado": {
+      "name": "竜巻発生",
+      "entries": 126,
+      "wins": 15,
+      "top5": 81,
+      "draws": 9,
+      "survivalSeconds": 5140.0999999999,
+      "winRate": 0.11904761904761904,
+      "winInterval95": [
+        0.07348600427891415,
+        0.18715157258397108
+      ],
+      "top5Rate": 0.6428571428571429,
+      "meanSurvivalSeconds": 40.794444444443656
+    },
+    "summon_pet": {
+      "name": "動物召喚",
+      "entries": 110,
+      "wins": 0,
+      "top5": 2,
+      "draws": 8,
+      "survivalSeconds": 2640.700000000024,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.03374513358912735
+      ],
+      "top5Rate": 0.01818181818181818,
+      "meanSurvivalSeconds": 24.006363636363854
+    },
+    "freeze_aura": {
+      "name": "フリーズ",
+      "entries": 130,
+      "wins": 3,
+      "top5": 19,
+      "draws": 13,
+      "survivalSeconds": 3873.0499999999874,
+      "winRate": 0.023076923076923078,
+      "winInterval95": [
+        0.00787867765789841,
+        0.06565301951248809
+      ],
+      "top5Rate": 0.14615384615384616,
+      "meanSurvivalSeconds": 29.79269230769221
+    },
+    "pitfall": {
+      "name": "落とし穴作成",
+      "entries": 111,
+      "wins": 4,
+      "top5": 49,
+      "draws": 11,
+      "survivalSeconds": 4287.949999999946,
+      "winRate": 0.036036036036036036,
+      "winInterval95": [
+        0.014101074357880557,
+        0.08901138663186531
+      ],
+      "top5Rate": 0.44144144144144143,
+      "meanSurvivalSeconds": 38.63018018017969
+    },
+    "magnet_repel": {
+      "name": "磁力弾き",
+      "entries": 119,
+      "wins": 2,
+      "top5": 45,
+      "draws": 9,
+      "survivalSeconds": 4200.533333333313,
+      "winRate": 0.01680672268907563,
+      "winInterval95": [
+        0.004621078613443866,
+        0.059213974007166756
+      ],
+      "top5Rate": 0.37815126050420167,
+      "meanSurvivalSeconds": 35.298599439775735
+    },
+    "triumph": {
+      "name": "倒すと強化",
+      "entries": 119,
+      "wins": 0,
+      "top5": 5,
+      "draws": 8,
+      "survivalSeconds": 2879.233333333358,
+      "winRate": 0,
+      "winInterval95": [
+        3.469446951953614e-18,
+        0.03127279358132749
+      ],
+      "top5Rate": 0.04201680672268908,
+      "meanSurvivalSeconds": 24.195238095238302
+    },
+    "time_stop": {
+      "name": "時間停止",
+      "entries": 134,
+      "wins": 39,
+      "top5": 78,
+      "draws": 8,
+      "survivalSeconds": 4996.249999999946,
+      "winRate": 0.291044776119403,
+      "winInterval95": [
+        0.2208125370887301,
+        0.3729240417089624
+      ],
+      "top5Rate": 0.582089552238806,
+      "meanSurvivalSeconds": 37.28544776119363
+    },
+    "nullify": {
+      "name": "能力無効",
+      "entries": 128,
+      "wins": 0,
+      "top5": 34,
+      "draws": 14,
+      "survivalSeconds": 4242.333333333311,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.02913799589810803
+      ],
+      "top5Rate": 0.265625,
+      "meanSurvivalSeconds": 33.143229166666494
+    },
+    "defense_x2": {
+      "name": "防御力2倍",
+      "entries": 124,
+      "wins": 3,
+      "top5": 50,
+      "draws": 7,
+      "survivalSeconds": 4631.883333333277,
+      "winRate": 0.024193548387096774,
+      "winInterval95": [
+        0.008261469015465258,
+        0.06872129715767399
+      ],
+      "top5Rate": 0.4032258064516129,
+      "meanSurvivalSeconds": 37.35389784946191
+    },
+    "underground": {
+      "name": "地中移動",
+      "entries": 125,
+      "wins": 12,
+      "top5": 64,
+      "draws": 13,
+      "survivalSeconds": 5283.51666666658,
+      "winRate": 0.096,
+      "winInterval95": [
+        0.05577067419104216,
+        0.16032102290058042
+      ],
+      "top5Rate": 0.512,
+      "meanSurvivalSeconds": 42.26813333333264
+    },
+    "extra_life": {
+      "name": "残機×2",
+      "entries": 124,
+      "wins": 1,
+      "top5": 29,
+      "draws": 6,
+      "survivalSeconds": 4178.766666666672,
+      "winRate": 0.008064516129032258,
+      "winInterval95": [
+        0.0014249697801255144,
+        0.044269076602272694
+      ],
+      "top5Rate": 0.23387096774193547,
+      "meanSurvivalSeconds": 33.69973118279574
+    },
+    "gatling": {
+      "name": "ガトリングガン",
+      "entries": 133,
+      "wins": 6,
+      "top5": 50,
+      "draws": 12,
+      "survivalSeconds": 4493.21666666661,
+      "winRate": 0.045112781954887216,
+      "winInterval95": [
+        0.020836924674096327,
+        0.09492904123100854
+      ],
+      "top5Rate": 0.37593984962406013,
+      "meanSurvivalSeconds": 33.783583959899325
+    },
+    "water_push": {
+      "name": "水流押し流し",
+      "entries": 108,
+      "wins": 0,
+      "top5": 2,
+      "draws": 11,
+      "survivalSeconds": 2656.4333333333584,
+      "winRate": 0,
+      "winInterval95": [
+        3.469446951953614e-18,
+        0.03434857870416731
+      ],
+      "top5Rate": 0.018518518518518517,
+      "meanSurvivalSeconds": 24.596604938271838
+    },
+    "bomb_throw": {
+      "name": "爆弾投げ",
+      "entries": 131,
+      "wins": 4,
+      "top5": 21,
+      "draws": 7,
+      "survivalSeconds": 3450.2166666666676,
+      "winRate": 0.030534351145038167,
+      "winInterval95": [
+        0.011936776219166959,
+        0.0758818198224107
+      ],
+      "top5Rate": 0.16030534351145037,
+      "meanSurvivalSeconds": 26.337531806615782
+    },
+    "acid_spray": {
+      "name": "酸噴射",
+      "entries": 120,
+      "wins": 0,
+      "top5": 2,
+      "draws": 10,
+      "survivalSeconds": 3041.500000000026,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.031020271055929513
+      ],
+      "top5Rate": 0.016666666666666666,
+      "meanSurvivalSeconds": 25.345833333333548
+    },
+    "seven_attacks": {
+      "name": "七回攻撃",
+      "entries": 119,
+      "wins": 26,
+      "top5": 59,
+      "draws": 7,
+      "survivalSeconds": 4543.766666666608,
+      "winRate": 0.2184873949579832,
+      "winInterval95": [
+        0.15368839845214266,
+        0.3008937626398653
+      ],
+      "top5Rate": 0.4957983193277311,
+      "meanSurvivalSeconds": 38.18291316526562
+    },
+    "wall_create": {
+      "name": "壁生成",
+      "entries": 134,
+      "wins": 43,
+      "top5": 92,
+      "draws": 7,
+      "survivalSeconds": 5973.799999999845,
+      "winRate": 0.3208955223880597,
+      "winInterval95": [
+        0.2477953723410063,
+        0.4039788380570158
+      ],
+      "top5Rate": 0.6865671641791045,
+      "meanSurvivalSeconds": 44.580597014924216
+    },
+    "spinning_blade": {
+      "name": "回転刃",
+      "entries": 121,
+      "wins": 5,
+      "top5": 48,
+      "draws": 8,
+      "survivalSeconds": 4230.4999999999545,
+      "winRate": 0.04132231404958678,
+      "winInterval95": [
+        0.01777722390103202,
+        0.0930960747430097
+      ],
+      "top5Rate": 0.39669421487603307,
+      "meanSurvivalSeconds": 34.962809917354996
+    },
+    "giant_punch": {
+      "name": "巨大パンチ",
+      "entries": 138,
+      "wins": 2,
+      "top5": 9,
+      "draws": 15,
+      "survivalSeconds": 3674.4166666666897,
+      "winRate": 0.014492753623188406,
+      "winInterval95": [
+        0.003983391943439229,
+        0.05130081240845753
+      ],
+      "top5Rate": 0.06521739130434782,
+      "meanSurvivalSeconds": 26.626207729468767
+    },
+    "split_on_death": {
+      "name": "死亡時分裂",
+      "entries": 115,
+      "wins": 1,
+      "top5": 24,
+      "draws": 10,
+      "survivalSeconds": 4035.866666666671,
+      "winRate": 0.008695652173913044,
+      "winInterval95": [
+        0.0015366093523631642,
+        0.047617895467497895
+      ],
+      "top5Rate": 0.20869565217391303,
+      "meanSurvivalSeconds": 35.09449275362323
+    },
+    "knife_throw": {
+      "name": "ナイフ投げ",
+      "entries": 122,
+      "wins": 4,
+      "top5": 33,
+      "draws": 17,
+      "survivalSeconds": 3957.2833333333183,
+      "winRate": 0.03278688524590164,
+      "winInterval95": [
+        0.012822391019358004,
+        0.08127685755980818
+      ],
+      "top5Rate": 0.27049180327868855,
+      "meanSurvivalSeconds": 32.43674863387966
+    },
+    "time_slow": {
+      "name": "時間遅化",
+      "entries": 121,
+      "wins": 10,
+      "top5": 36,
+      "draws": 8,
+      "survivalSeconds": 4416.116666666627,
+      "winRate": 0.08264462809917356,
+      "winInterval95": [
+        0.04550855800110743,
+        0.14546624526959717
+      ],
+      "top5Rate": 0.2975206611570248,
+      "meanSurvivalSeconds": 36.49683195592254
+    },
+    "expand_domain": {
+      "name": "盤面拡大",
+      "entries": 130,
+      "wins": 11,
+      "top5": 70,
+      "draws": 11,
+      "survivalSeconds": 5173.099999999898,
+      "winRate": 0.08461538461538462,
+      "winInterval95": [
+        0.047903387035414836,
+        0.1451726072742766
+      ],
+      "top5Rate": 0.5384615384615384,
+      "meanSurvivalSeconds": 39.793076923076136
+    },
+    "homing_laser": {
+      "name": "ホーミング光線",
+      "entries": 111,
+      "wins": 0,
+      "top5": 6,
+      "draws": 11,
+      "survivalSeconds": 2847.7166666666853,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.03345129291127953
+      ],
+      "top5Rate": 0.05405405405405406,
+      "meanSurvivalSeconds": 25.655105105105275
+    },
+    "jet_dash": {
+      "name": "ジェット突進",
+      "entries": 117,
+      "wins": 0,
+      "top5": 0,
+      "draws": 13,
+      "survivalSeconds": 2776.8666666667013,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.03179037682387522
+      ],
+      "top5Rate": 0,
+      "meanSurvivalSeconds": 23.733903133903432
+    },
+    "bike_ride": {
+      "name": "バイク搭乗",
+      "entries": 112,
+      "wins": 13,
+      "top5": 84,
+      "draws": 5,
+      "survivalSeconds": 5039.566666666554,
+      "winRate": 0.11607142857142858,
+      "winInterval95": [
+        0.06909968490657367,
+        0.18850725422410133
+      ],
+      "top5Rate": 0.75,
+      "meanSurvivalSeconds": 44.99613095237994
+    },
+    "chain_bind": {
+      "name": "拘束の鎖",
+      "entries": 109,
+      "wins": 3,
+      "top5": 29,
+      "draws": 11,
+      "survivalSeconds": 3744.7999999999915,
+      "winRate": 0.027522935779816515,
+      "winInterval95": [
+        0.009403685491248322,
+        0.07781237667022406
+      ],
+      "top5Rate": 0.26605504587155965,
+      "meanSurvivalSeconds": 34.355963302752215
+    },
+    "death_stare": {
+      "name": "死の眼差し",
+      "entries": 133,
+      "wins": 1,
+      "top5": 5,
+      "draws": 9,
+      "survivalSeconds": 3363.750000000026,
+      "winRate": 0.007518796992481203,
+      "winInterval95": [
+        0.0013284534153853028,
+        0.04136031958931502
+      ],
+      "top5Rate": 0.03759398496240601,
+      "meanSurvivalSeconds": 25.29135338345884
+    },
+    "vampire_lord": {
+      "name": "吸血鬼化",
+      "entries": 112,
+      "wins": 0,
+      "top5": 63,
+      "draws": 11,
+      "survivalSeconds": 4524.683333333251,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.03316252537948371
+      ],
+      "top5Rate": 0.5625,
+      "meanSurvivalSeconds": 40.398958333332594
+    },
+    "summon_knight": {
+      "name": "騎士召喚",
+      "entries": 120,
+      "wins": 0,
+      "top5": 19,
+      "draws": 8,
+      "survivalSeconds": 3846.5333333333288,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.031020271055929513
+      ],
+      "top5Rate": 0.15833333333333333,
+      "meanSurvivalSeconds": 32.05444444444441
+    },
+    "counter_damage": {
+      "name": "カウンター",
+      "entries": 116,
+      "wins": 0,
+      "top5": 4,
+      "draws": 11,
+      "survivalSeconds": 2790.8666666666923,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.03205564678709229
+      ],
+      "top5Rate": 0.034482758620689655,
+      "meanSurvivalSeconds": 24.05919540229907
+    },
+    "warp_gate": {
+      "name": "ワープゲート",
+      "entries": 124,
+      "wins": 0,
+      "top5": 19,
+      "draws": 6,
+      "survivalSeconds": 3756.116666666682,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.030049686487027695
+      ],
+      "top5Rate": 0.1532258064516129,
+      "meanSurvivalSeconds": 30.291263440860337
+    },
+    "emoji_launcher": {
+      "name": "絵文字ランチャー",
+      "entries": 138,
+      "wins": 0,
+      "top5": 14,
+      "draws": 12,
+      "survivalSeconds": 3822.5166666666832,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.027083732840013083
+      ],
+      "top5Rate": 0.10144927536231885,
+      "meanSurvivalSeconds": 27.699396135265822
+    },
+    "final_five_invincible": {
+      "name": "終盤無敵",
+      "entries": 136,
+      "wins": 5,
+      "top5": 6,
+      "draws": 10,
+      "survivalSeconds": 3470.4833333333586,
+      "winRate": 0.03676470588235294,
+      "winInterval95": [
+        0.015803853341031543,
+        0.08317670752211648
+      ],
+      "top5Rate": 0.04411764705882353,
+      "meanSurvivalSeconds": 25.518259803921755
+    },
+    "border_spikes": {
+      "name": "外周棘生成",
+      "entries": 126,
+      "wins": 10,
+      "top5": 60,
+      "draws": 10,
+      "survivalSeconds": 4659.333333333283,
+      "winRate": 0.07936507936507936,
+      "winInterval95": [
+        0.043678399818189974,
+        0.13994225796791251
+      ],
+      "top5Rate": 0.47619047619047616,
+      "meanSurvivalSeconds": 36.978835978835576
+    },
+    "accelerate_on_bounce": {
+      "name": "反発加速",
+      "entries": 119,
+      "wins": 18,
+      "top5": 37,
+      "draws": 8,
+      "survivalSeconds": 4287.916666666647,
+      "winRate": 0.15126050420168066,
+      "winInterval95": [
+        0.0978721829192941,
+        0.22646094201558137
+      ],
+      "top5Rate": 0.31092436974789917,
+      "meanSurvivalSeconds": 36.03291316526594
+    },
+    "team_haste": {
+      "name": "全体加速",
+      "entries": 138,
+      "wins": 6,
+      "top5": 42,
+      "draws": 13,
+      "survivalSeconds": 4438.9333333332725,
+      "winRate": 0.043478260869565216,
+      "winInterval95": [
+        0.020076222874206656,
+        0.09160892450145745
+      ],
+      "top5Rate": 0.30434782608695654,
+      "meanSurvivalSeconds": 32.16618357487879
+    },
+    "invincible_until_first_death": {
+      "name": "最初の一人が死ぬまで無敵",
+      "entries": 126,
+      "wins": 0,
+      "top5": 17,
+      "draws": 10,
+      "survivalSeconds": 3618.9166666666792,
+      "winRate": 0,
+      "winInterval95": [
+        0,
+        0.029586819632536877
+      ],
+      "top5Rate": 0.1349206349206349,
+      "meanSurvivalSeconds": 28.721560846560948
+    },
+    "wizard_mode": {
+      "name": "魔法使い化",
+      "entries": 123,
+      "wins": 68,
+      "top5": 75,
+      "draws": 5,
+      "survivalSeconds": 4147.683333333273,
+      "winRate": 0.5528455284552846,
+      "winInterval95": [
+        0.4647023677965987,
+        0.6377876670184777
+      ],
+      "top5Rate": 0.6097560975609756,
+      "meanSurvivalSeconds": 33.72100271002661
+    }
+  }
+}
