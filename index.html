@@ -1,0 +1,1999 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オートバトラー・シミュレーター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c;
+            color: #e2e8f0;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+        #game-container {
+            flex: 1;
+            position: relative;
+            background-color: #2d3748;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #battlefield {
+            position: relative;
+            width: 800px;
+            height: 800px;
+            flex-shrink: 0;
+            transform-origin: center center;
+            border-radius: 50%;
+            overflow: hidden; 
+        }
+
+        #battlefield-bg {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            background-color: #4a5568; 
+            border-radius: 50%; 
+            border: 4px solid #718096;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5) inset;
+            z-index: 1;
+            transition: width 0.1s linear, height 0.1s linear;
+        }
+
+        #battlefield-floor {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #1a202c; 
+            background-image: repeating-linear-gradient(45deg, rgba(255,0,0,0.05) 0, rgba(255,0,0,0.05) 15px, transparent 15px, transparent 30px);
+            z-index: 0;
+        }
+
+        #danger-zone {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 50%, rgba(255, 0, 0, 0.3) 100%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .character {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 20;
+            transition: transform 0.1s, filter 0.2s;
+        }
+        
+        .character.hit {
+            transform: translate(-50%, -50%) scale(1.2) rotate(10deg);
+            filter: brightness(1.5) drop-shadow(0 0 5px red);
+        }
+
+        .character.invincible {
+            filter: drop-shadow(0 0 10px #fef08a);
+        }
+        
+        .character.frozen {
+            filter: hue-rotate(180deg) brightness(1.2);
+        }
+
+        .hp-bar-container {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 8px;
+            background-color: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hp-bar-wrap { position: relative; width: 100%; height: 100%; }
+        .hp-bar {
+            height: 100%;
+            background-color: #48bb78;
+            width: 100%;
+            transition: width 0.2s ease, background-color 0.2s ease;
+        }
+        .hp-bar.low { background-color: #e53e3e; }
+        .hp-bar.med { background-color: #ecc94b; }
+        
+        .shield-bar {
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            background-color: #63b3ed;
+            opacity: 0.8;
+            transition: width 0.2s ease;
+        }
+
+        .char-name-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .damage-text {
+            position: absolute;
+            font-weight: bold;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 50;
+            animation: floatUp 1s ease-out forwards;
+            text-shadow: 1px 1px 1px black;
+        }
+        .heal-text { color: #68d391; }
+        
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translate(-50%, -10px) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -40px) scale(1.5); }
+        }
+
+        .projectile { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; z-index: 15; pointer-events: none; }
+        .zone { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; z-index: 5; pointer-events: none; }
+        .tornado-effect { position: absolute; transform: translate(-50%, -50%); font-size: 40px; z-index: 18; pointer-events: none; animation: spin 0.5s linear infinite; }
+        .beam-effect { position: absolute; transform-origin: left center; z-index: 16; pointer-events: none; opacity: 0.8; }
+        .slash-effect { position: absolute; font-size: 30px; z-index: 25; pointer-events: none; transform: translate(-50%, -50%); animation: fadeOut 0.2s forwards; }
+        .effect-text { position: absolute; font-weight: bold; z-index: 60; pointer-events: none; transform: translate(-50%, -50%); animation: flashFade 0.5s forwards; text-shadow: 0 0 5px currentColor; }
+
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes fadeOut { 100% { opacity: 0; } }
+        @keyframes flashFade { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1.5); } 100% { transform: translate(-50%, -50%) scale(2); opacity: 0; } }
+
+        #sidebar {
+            width: 380px;
+            background-color: #2d3748;
+            border-left: 1px solid #4a5568;
+            display: flex;
+            flex-direction: column;
+            z-index: 40;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2d3748; }
+        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #718096; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="text-sm">
+
+    <div id="game-container">
+        <!-- 開始オーバーレイ -->
+        <div id="start-overlay" class="absolute inset-0 bg-gray-900 bg-opacity-90 flex flex-col justify-center items-center z-50">
+            <h1 class="text-4xl font-bold mb-4 text-white">オートバトラー<span class="text-yellow-400 text-xl ml-2">超絶進化版</span></h1>
+            <p class="mb-6 text-gray-400 max-w-xl text-center leading-relaxed">
+                最大60人までの名前をカンマ(,)区切りで入力してください。<br>
+                名前を元に<strong>多彩なスキル</strong>を持つキャラクターが生成され、最後まで戦います。<br>
+                <span class="text-red-400 font-bold">※50秒経過でサドンデスモード(攻撃力10倍/速度3倍)に突入します</span>
+            </p>
+            <textarea id="name-input" class="w-[500px] h-40 p-4 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:border-blue-500 mb-4 resize-none" placeholder="例: 勇者, 魔王, ドラゴン..."></textarea>
+            <button id="start-btn" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                バトル開始
+            </button>
+        </div>
+
+        <!-- バトルエリア -->
+        <div id="battlefield" class="hidden">
+            <div id="battlefield-floor"></div>
+            <div id="battlefield-bg">
+                <div id="danger-zone"></div>
+            </div>
+        </div>
+        
+        <div id="time-stop-overlay" class="hidden absolute inset-0 bg-purple-900 bg-opacity-30 pointer-events-none z-40 transition-opacity duration-300">
+            <div class="absolute inset-0 flex items-center justify-center text-white opacity-20 text-9xl font-black font-serif italic" style="letter-spacing: 0.5em;">TIME STOP</div>
+        </div>
+
+        <div id="game-over-overlay" class="hidden absolute inset-0 bg-black bg-opacity-80 flex flex-col justify-center items-center z-50">
+            <h2 class="text-5xl font-bold text-yellow-400 mb-2 drop-shadow-lg">WINNER!</h2>
+            <div id="winner-display" class="text-[80px] mb-6">👑</div>
+            <h3 id="winner-name" class="text-4xl text-white font-bold mb-8"></h3>
+            <button id="restart-btn" class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded shadow text-lg font-bold">もう一度遊ぶ</button>
+        </div>
+    </div>
+
+    <!-- サイドバー -->
+    <div id="sidebar" class="h-full">
+        <div class="p-4 border-b border-gray-600 bg-gray-800 flex justify-between items-center">
+            <h2 class="text-xl font-bold">参加者リスト</h2>
+            <span id="alive-count" class="bg-blue-900 text-blue-200 px-2 py-1 rounded text-xs font-bold">0 / 0 生存</span>
+        </div>
+        
+        <div id="character-list" class="flex-1 overflow-y-auto p-2"></div>
+
+        <div id="editor-panel" class="hidden border-t border-gray-600 bg-gray-800 p-4 h-64 overflow-y-auto">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold text-lg text-blue-300">キャラクター編集</h3>
+                <button id="close-editor-btn" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            
+            <div id="editor-content" class="space-y-3">
+                <div class="flex items-center space-x-3">
+                    <div id="edit-avatar" class="text-3xl"></div>
+                    <div class="font-bold text-xl" id="edit-name"></div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                        <label class="block text-gray-400">攻撃力 (ATK)</label>
+                        <input type="number" id="edit-atk" class="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400">最大体力 (HP)</label>
+                        <input type="number" id="edit-maxhp" class="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400">速度 (SPD) ※最大200</label>
+                        <!-- max 200を追加 -->
+                        <input type="number" id="edit-spd" class="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600" step="0.1" max="200">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-gray-400">スキル</label>
+                        <select id="edit-skill" class="w-full bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 text-xs"></select>
+                    </div>
+                </div>
+                <button id="save-edit-btn" class="w-full mt-2 py-2 bg-green-600 hover:bg-green-500 rounded text-white font-bold">保存して適用</button>
+            </div>
+        </div>
+        
+        <div class="p-4 border-t border-gray-600 bg-gray-900 flex justify-between items-center flex-wrap gap-2">
+            <div class="flex gap-2">
+                <button id="pause-btn" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded shadow disabled:opacity-50" disabled>一時停止</button>
+                <button id="shuffle-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded shadow disabled:opacity-50">能力シャッフル</button>
+                <button id="stop-btn" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded shadow hidden">中断</button>
+            </div>
+             <div class="text-sm font-mono text-gray-400">
+                 ⏱ <span id="game-time" class="text-lg">00:00</span>
+             </div>
+        </div>
+    </div>
+
+    <script>
+        const MAX_PLAYERS = 60; 
+        const BATTLEFIELD_SIZE = 800;
+        const MIN_BATTLEFIELD_SIZE = 200;
+        const FPS = 60;
+        const TICK_RATE = 1000 / FPS;
+        const AVATARS = ['🐵', '🐶', '🐺', '🦊', '🐱', '🦁', '🐯', '🐴', '🦄', '🐮', '🐷', '🐗', '🐭', '🐹', '🐰', '🐻', '🐨', '🐼', '🐸', '🐲', '🐔', '🐧', '🦅', '🦉', '🦇', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🕷', '🦂', '🦀', '🦑', '🐙', '🦞', '🐟', '🐬', '🐳', '🦈', '🐊', '🐅', '🐆', '🦍', '🦧', '🦣', '🦏', '🦛', '🐫', '🦒', '🦘', '🦬', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🐓', '🦃', '🦚', '🦜', '🦢', '🦩', '🕊', '🐇', '🦝', '🦨', '🦡', '🦦', '🦥', '🐁', '🐀', '🐿', '🦔'];
+        const PET_AVATARS = ['🐤', '🐁', '🐟', '🐛', '🐜', '🐌'];
+        
+        // 絵文字ランチャー用の顔文字配列
+        const EMOJI_FACES = ['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '🥰', '😗', '😙', '😚', '☺️', '🙂', '🤗', '🤩', '🤔', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🤑', '😲', '☹️', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😰', '😱', '🥵', '🥶', '😳', '🤪', '😵', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖'];
+        
+        // --- 全スキル定義 (洗脳を削除、絵文字ランチャーを追加) ---
+        const SKILLS = [
+            { id: 'none', name: 'なし', color: 'text-gray-400', desc: '特になし' },
+            { id: 'critical', name: 'クリティカル', color: 'text-red-400', desc: '10%でダメージ20倍' },
+            { id: 'vampire', name: '吸収', color: 'text-purple-400', desc: '与ダメの30%回復' },
+            { id: 'dodge', name: '回避', color: 'text-blue-400', desc: '15%でダメージ無効' },
+            { id: 'regeneration', name: 'リジェネ', color: 'text-green-400', desc: '毎秒最大HPの2%回復' },
+            { id: 'scaling_atk', name: 'だんだん攻撃力UP', color: 'text-red-500', desc: '毎秒攻撃力が上昇' },
+            { id: 'scaling_spd', name: 'だんだん速度UP', color: 'text-yellow-400', desc: '毎秒速度が上昇(最大200)' },
+            { id: 'ranged_shot', name: '遠隔射撃', color: 'text-gray-300', desc: '定期的に一番近い敵に弾を撃つ' },
+            { id: 'explosion', name: '爆発', color: 'text-orange-500', desc: '死亡時に周囲に大ダメージ' },
+            { id: 'slow_zone', name: '遅化ゾーン作成', color: 'text-blue-200', desc: '足元に敵を遅くする沼を置く' },
+            { id: 'poison_zone', name: '毒ゾーン作成', color: 'text-purple-600', desc: '足元に毒沼を置く' },
+            { id: 'teleport', name: 'テレポート', color: 'text-indigo-400', desc: '定期的にランダムな場所へワープし無敵化' },
+            { id: 'invincible_chance', name: '一定確率無敵', color: 'text-yellow-200', desc: '被弾時5%で数秒間無敵' },
+            { id: 'shield', name: 'バリア', color: 'text-cyan-300', desc: '戦闘開始時に最大HPの50%のバリア' },
+            { id: 'random_lightning', name: 'ランダム雷', color: 'text-yellow-500', desc: '定期的にランダムな敵に雷を落とす' },
+            { id: 'flamethrower', name: '火炎放射', color: 'text-red-600', desc: '定期的に進行方向に炎を吹く' },
+            { id: 'giant', name: '巨大化', color: 'text-orange-700', desc: '開始時サイズ・ステータス上昇' },
+            { id: 'destiny_bond', name: '道連れ', color: 'text-purple-800', desc: '倒された時、倒した相手に即死ダメージ' },
+            { id: 'clone', name: '分身', color: 'text-gray-300', desc: '定期的にHP2割の分身を生成' },
+            { id: 'rainbow_beam', name: '虹ビーム', color: 'text-pink-400', desc: '定期的に前方に極太ビーム' },
+            { id: 'flying', name: '飛行', color: 'text-sky-300', desc: '定期的に上空に飛び立ち完全無敵になる' },
+            { id: 'super_knockback', name: '超ノックバック', color: 'text-emerald-500', desc: '攻撃時、激しく吹き飛ばし攻撃力1.5倍' },
+            { id: 'self_heal', name: '自己回復', color: 'text-green-500', desc: 'HP30%以下で一度だけ大回復' },
+            { id: 'instant_kill', name: '超低確率即死', color: 'text-red-800', desc: '攻撃時1%の確率で即死させる' },
+            { id: 'berserk', name: '超加速超耐久', color: 'text-red-700', desc: 'HP30%以下で永続的に超パワーアップ' },
+            { id: 'sonic_wave', name: '音波攻撃', color: 'text-teal-300', desc: '発動時無敵になり、連続で周囲を吹き飛ばす' },
+            { id: 'slash', name: '斬撃', color: 'text-gray-100', desc: '定期的に前方の敵に近接大ダメージ' },
+            { id: 'tornado', name: '竜巻発生', color: 'text-gray-500', desc: '定期的に竜巻(吸い寄せ)を放つ' },
+            { id: 'summon_pet', name: '動物召喚', color: 'text-yellow-700', desc: '定期的に味方の動物を召喚' },
+            { id: 'freeze_aura', name: 'フリーズ', color: 'text-cyan-200', desc: '定期的に周囲の敵を数秒止める' },
+            { id: 'pitfall', name: '落とし穴作成', color: 'text-amber-700', desc: '踏むと止まる罠を設置。落ちると自身回復' },
+            { id: 'magnet_repel', name: '磁力弾き', color: 'text-pink-300', desc: '定期的に周囲の敵を大きく弾き飛ばす' },
+            { id: 'triumph', name: '倒すと強化', color: 'text-yellow-600', desc: '敵を倒すと一部回復＆攻撃力微増' },
+            { id: 'time_stop', name: '時間停止', color: 'text-fuchsia-500', desc: '定期的に数秒間、自分以外を停止(停止中能力150倍)' },
+            { id: 'nullify', name: '能力無効', color: 'text-gray-500', desc: '全魔法/武器/状態異常無効＆無敵を即死させる' },
+            { id: 'defense_x2', name: '防御力2倍', color: 'text-blue-500', desc: '受けるダメージを半減する' },
+            { id: 'underground', name: '地中移動', color: 'text-amber-900', desc: '定期的に地中に潜り無敵化、出現時ダメージ' },
+            { id: 'extra_life', name: '残機×2', color: 'text-pink-500', desc: 'HP0で復活。ただし最大HPにデバフ' },
+            { id: 'gatling', name: 'ガトリングガン', color: 'text-gray-400', desc: '定期的に前方に弾を連射する' },
+            { id: 'water_push', name: '水流押し流し', color: 'text-blue-300', desc: '定期的に周囲の敵を水で遠くへ押し流す' },
+            { id: 'bomb_throw', name: '爆弾投げ', color: 'text-red-600', desc: '敵の足元に数秒後爆発する爆弾を投げる' },
+            { id: 'acid_spray', name: '酸噴射', color: 'text-green-500', desc: '前方に酸を撒き、持続ダメージを与える' },
+            { id: 'seven_attacks', name: '七回攻撃', color: 'text-yellow-600', desc: '攻撃時に7回ダメージ。7回攻撃する度HP77回復' },
+            { id: 'wall_create', name: '壁生成', color: 'text-stone-500', desc: '定期的に周囲360度に通れない壁を生成' },
+            { id: 'spinning_blade', name: '回転刃', color: 'text-gray-200', desc: '常に周囲にダメージ判定を纏う' },
+            { id: 'giant_punch', name: '巨大パンチ', color: 'text-orange-600', desc: '前方の敵に大ダメージと超絶ノックバック' },
+            { id: 'split_on_death', name: '死亡時分裂', color: 'text-purple-300', desc: '死亡時に小さな分身を複数生み出す' },
+            { id: 'knife_throw', name: 'ナイフ投げ', color: 'text-gray-400', desc: '全方位にナイフを投げる' },
+            { id: 'time_slow', name: '時間遅化', color: 'text-indigo-300', desc: '定期的に他全員の速度を半減させる。遅化中無敵' },
+            { id: 'expand_domain', name: '盤面拡大', color: 'text-emerald-300', desc: '一度だけ盤面の縮小を初期サイズに戻す(全回復)' },
+            { id: 'homing_laser', name: 'ホーミング光線', color: 'text-cyan-400', desc: '敵を追尾する光線を撃つ' },
+            { id: 'jet_dash', name: 'ジェット突進', color: 'text-red-400', desc: '定期的に超高速突進で大ダメージを与える' },
+            { id: 'bike_ride', name: 'バイク搭乗', color: 'text-zinc-400', desc: '専用HPを持つバイクに乗る(速度UP)' },
+            { id: 'chain_bind', name: '拘束の鎖', color: 'text-stone-400', desc: '近くの敵を一定時間移動不可にする(被ダメ10倍)' },
+            { id: 'death_stare', name: '死の眼差し', color: 'text-purple-900', desc: '自分の近くに2秒居続けた敵を即死させる' },
+            { id: 'vampire_lord', name: '吸血鬼化', color: 'text-rose-700', desc: 'HP半減時、永続的に全強化＆超吸収' },
+            { id: 'summon_knight', name: '騎士召喚', color: 'text-yellow-300', desc: '1度だけ騎士を召喚。生存中無敵だが全能力1' },
+            { id: 'counter_damage', name: 'カウンター', color: 'text-orange-400', desc: '受けたダメージの30%を相手に返す' },
+            { id: 'warp_gate', name: 'ワープゲート', color: 'text-fuchsia-400', desc: '空間を繋ぐゲートを設置(敵が通ると弱体化)' },
+            { id: 'emoji_launcher', name: '絵文字ランチャー', color: 'text-yellow-400', desc: '定期的に高火力の顔文字を連射。壁に当たると消滅' },
+            { id: 'final_five_invincible', name: '終盤無敵', color: 'text-yellow-100', desc: '残り5チームになると完全無敵になる' },
+            { id: 'border_spikes', name: '外周棘生成', color: 'text-red-800', desc: '盤面の外枠に触れた敵にダメージを与える' },
+            { id: 'accelerate_on_bounce', name: '反発加速', color: 'text-lime-400', desc: '壁や敵にぶつかる度に速度が上昇＆回復' },
+            { id: 'team_haste', name: '全体加速', color: 'text-cyan-200', desc: '定期的に自分と味方の速度を上げ、無敵を付与' },
+            { id: 'invincible_until_first_death', name: '最初の一人が死ぬまで無敵', color: 'text-slate-300', desc: '誰かが脱落するまで無敵だが全能力半減' },
+            { id: 'wizard_mode', name: '魔法使い化', color: 'text-violet-500', desc: '定期的にランダムな魔法を連射する状態になる' }
+        ];
+
+        const SUPPORT_SKILLS = [
+            'slow_zone', 'poison_zone', 'teleport', 'pitfall', 'magnet_repel', 
+            'time_stop', 'wall_create', 'time_slow', 'expand_domain', 'chain_bind', 
+            'warp_gate'
+        ];
+
+        let characters = [];
+        let gameObjects = []; 
+        let zones = [];       
+        
+        let gameLoopId = null;
+        let isPlaying = false;
+        let gameTime = 0; 
+        let currentBattlefieldRadius = BATTLEFIELD_SIZE / 2;
+        let editingCharId = null;
+        let initialTeamCount = 0; 
+        
+        let timeStopState = { active: false, ownerTeam: null, endTime: 0 };
+        let timeSlowState = { active: false, ownerTeam: null, endTime: 0 };
+        let charIdCounter = 0;
+        let globalSpikesActive = false; 
+        let isSuddenDeath = false;
+        let hasFirstDeathOccurred = false; 
+        
+        const customStats = new Map();
+
+        const ui = {
+            startOverlay: document.getElementById('start-overlay'),
+            nameInput: document.getElementById('name-input'),
+            startBtn: document.getElementById('start-btn'),
+            battlefield: document.getElementById('battlefield'),
+            battlefieldBg: null,
+            characterList: document.getElementById('character-list'),
+            aliveCount: document.getElementById('alive-count'),
+            editorPanel: document.getElementById('editor-panel'),
+            closeEditorBtn: document.getElementById('close-editor-btn'),
+            saveEditBtn: document.getElementById('save-edit-btn'),
+            pauseBtn: document.getElementById('pause-btn'),
+            shuffleBtn: document.getElementById('shuffle-btn'),
+            stopBtn: document.getElementById('stop-btn'),
+            gameTime: document.getElementById('game-time'),
+            gameOverOverlay: document.getElementById('game-over-overlay'),
+            winnerDisplay: document.getElementById('winner-display'),
+            winnerName: document.getElementById('winner-name'),
+            restartBtn: document.getElementById('restart-btn'),
+            editAvatar: document.getElementById('edit-avatar'),
+            editName: document.getElementById('edit-name'),
+            editAtk: document.getElementById('edit-atk'),
+            editMaxHp: document.getElementById('edit-maxhp'),
+            editSpd: document.getElementById('edit-spd'),
+            editSkill: document.getElementById('edit-skill'),
+            timeStopOverlay: document.getElementById('time-stop-overlay'),
+            gameContainer: document.getElementById('game-container')
+        };
+
+        if (ui.editSkill) {
+            SKILLS.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = `${s.name} (${s.desc})`;
+                ui.editSkill.appendChild(opt);
+            });
+        }
+
+        function cyrb53(str, seed = 0) {
+            let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+            for (let i = 0, ch; i < str.length; i++) {
+                ch = str.charCodeAt(i);
+                h1 = Math.imul(h1 ^ ch, 2654435761);
+                h2 = Math.imul(h2 ^ ch, 1597334677);
+            }
+            h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+            h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+            return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+        }
+
+        function mulberry32(a) {
+            return function() {
+              var t = a += 0x6D2B79F5;
+              t = Math.imul(t ^ t >>> 15, t | 1);
+              t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+              return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        function getDistance(p1, p2) {
+            const dx = p1.x - p2.x;
+            const dy = p1.y - p2.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function showFloatingText(x, y, text, className) {
+            const el = document.createElement('div');
+            el.className = `damage-text ${className}`;
+            el.textContent = text;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            ui.battlefield.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function createEffect(className, x, y, innerHTML, duration = 500, style = '') {
+            const el = document.createElement('div');
+            el.className = className;
+            if(innerHTML) el.innerHTML = innerHTML;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            if(style) el.style.cssText += style;
+            ui.battlefield.appendChild(el);
+            if(duration > 0) setTimeout(() => el.remove(), duration);
+            return el;
+        }
+
+        function resizeBattlefield() {
+            if (!ui.gameContainer || !ui.battlefield) return;
+            const cw = ui.gameContainer.clientWidth;
+            const ch = ui.gameContainer.clientHeight;
+            const scale = Math.min(cw / 840, ch / 840, 1);
+            ui.battlefield.style.transform = `scale(${scale})`;
+        }
+        window.addEventListener('resize', resizeBattlefield);
+
+        class Character {
+            constructor(name, randFunc, isMinion = false, parentTeamId = null, assignedSkillId = null) {
+                this.id = 'char_' + (charIdCounter++);
+                this.name = name;
+                this.teamId = parentTeamId || this.id;
+                this.isMinion = isMinion;
+                this.isFragment = false; 
+                this.weakEndTime = 0; 
+                this.sevenAttackCount = 0; 
+                this.hasSummonedKnight = false; 
+                
+                if (randFunc) {
+                    this.avatar = isMinion ? PET_AVATARS[Math.floor(randFunc() * PET_AVATARS.length)] : AVATARS[Math.floor(randFunc() * AVATARS.length)];
+                    const basePool = randFunc();
+                    
+                    if (basePool < 0.33) { this.atk = 15 + randFunc() * 10; this.maxHp = 1000 + randFunc() * 200; this.speed = 4.5 + randFunc() * 1.5; }
+                    else if (basePool < 0.66) { this.atk = 8 + randFunc() * 10; this.maxHp = 1200 + randFunc() * 300; this.speed = 4.0 + randFunc() * 1.0; }
+                    else { this.atk = 10 + randFunc() * 8; this.maxHp = 1000 + randFunc() * 150; this.speed = 5.5 + randFunc() * 1.5; }
+                    
+                    if (isMinion) {
+                        this.atk *= 0.1; this.maxHp *= 0.1; this.skill = 'none';
+                    } else {
+                        this.skill = assignedSkillId || 'none';
+                    }
+                } else {
+                    this.avatar = '👤'; this.atk = 10; this.maxHp = 1000; this.speed = 5.0; this.skill = 'none';
+                }
+
+                if (SUPPORT_SKILLS.includes(this.skill) && !this.isMinion) {
+                    this.maxHp *= 1.5;
+                }
+
+                if (this.skill === 'extra_life') {
+                    this.maxHp *= 0.8; 
+                }
+
+                if (!isMinion && customStats.has(this.name)) {
+                    const saved = customStats.get(this.name);
+                    this.atk = saved.atk;
+                    this.maxHp = saved.maxHp;
+                    this.speed = saved.speed;
+                    this.skill = saved.skill;
+                }
+
+                this.radius = 16;
+                this.isFlying = false;
+                this.hasExtraLife = false;
+                this.bikeHp = 0;
+                this.knightRef = null;
+                
+                if (this.skill === 'giant') {
+                    this.radius = 36; this.maxHp *= 2.5; this.atk *= 2.0; this.speed *= 0.8;
+                } else if (this.skill === 'super_knockback') {
+                    this.atk *= 1.5;
+                } else if (this.skill === 'extra_life') {
+                    this.hasExtraLife = true;
+                } else if (this.skill === 'bike_ride') {
+                    this.bikeHp = this.maxHp * 1.5;
+                    this.avatar = '🏍️';
+                    this.speed *= 1.5;
+                }
+
+                this.hp = this.maxHp;
+                this.shield = this.skill === 'shield' ? this.maxHp * 0.5 : 0;
+                this.maxShield = this.shield;
+                this.isAlive = true;
+                
+                this.isInvincible = false;
+                this.stunEndTime = 0;
+                this.chainBindEndTime = 0; 
+                this.nullifyEndTime = 0;
+                this.berserkActive = false; 
+                this.vampireActive = false; 
+                this.wizardEndTime = 0;
+                this.hasteEndTime = 0;
+                this.isUnderground = false;
+                this.flightEndTime = 0;
+                this.jetDashEndTime = 0;
+                this.teleportInvincibleEndTime = 0; 
+                this.sonicInvincibleEndTime = 0;    
+                
+                this.usedBurstHeal = false;
+                this.usedExpandDomain = false;
+                
+                this.lastSkills = {}; 
+                this.stareTargets = new Map(); 
+                this.gatlingShots = 0;
+                this.gatlingTargetAngle = 0;
+
+                const r = Math.random() * (BATTLEFIELD_SIZE / 4);
+                const angle = Math.random() * Math.PI * 2;
+                this.x = BATTLEFIELD_SIZE / 2 + Math.cos(angle) * r;
+                this.y = BATTLEFIELD_SIZE / 2 + Math.sin(angle) * r;
+
+                const moveAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(moveAngle) * this.speed;
+                this.vy = Math.sin(moveAngle) * this.speed;
+                
+                this.element = null;
+                this.hpBarElement = null;
+                this.shieldBarElement = null;
+                this.listItemElement = null;
+            }
+
+            createDOM() {
+                const el = document.createElement('div');
+                el.id = this.id;
+                el.className = 'character';
+                el.style.width = `${this.radius * 2}px`;
+                el.style.height = `${this.radius * 2}px`;
+                el.style.fontSize = `${this.radius * 1.5}px`;
+                
+                el.innerHTML = `
+                    ${this.avatar}
+                    <div class="char-name-label">${this.name}</div>
+                    <div class="hp-bar-container">
+                        <div class="hp-bar-wrap">
+                            <div class="hp-bar" style="width: 100%"></div>
+                            <div class="shield-bar" style="width: ${this.maxShield > 0 || this.bikeHp > 0 ? '100%' : '0%'}"></div>
+                        </div>
+                    </div>
+                `;
+                
+                el.addEventListener('click', (e) => { e.stopPropagation(); openEditor(this); });
+                ui.battlefield.appendChild(el);
+                this.element = el;
+                this.hpBarElement = el.querySelector('.hp-bar');
+                this.shieldBarElement = el.querySelector('.shield-bar');
+                this.updatePosition();
+            }
+
+            createListItem() {
+                if(this.isMinion) return;
+                const li = document.createElement('div');
+                li.id = `list_${this.id}`;
+                
+                const skillObj = SKILLS.find(s => s.id === this.skill) || SKILLS[0];
+                li.className = 'flex items-center p-2 mb-2 bg-gray-700 rounded shadow border-l-4 border-transparent cursor-pointer hover:bg-gray-600 transition-colors';
+                this.updateListItemHTML(li, skillObj);
+                
+                li.addEventListener('click', () => openEditor(this));
+                ui.characterList.appendChild(li);
+                this.listItemElement = li;
+            }
+
+            updateListItemHTML(li, skillObj) {
+                li.innerHTML = `
+                    <div class="text-2xl mr-3">${this.avatar}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-bold text-white truncate">${this.name}</div>
+                        <div class="text-xs text-gray-400 flex justify-between mt-1">
+                            <span>❤️ ${Math.ceil(this.hp)}</span>
+                            <span>⚔️ ${Math.ceil(this.atk)}</span>
+                            <span>👟 ${this.speed.toFixed(1)}</span>
+                        </div>
+                        <div class="text-[10px] mt-1 font-bold ${skillObj.color}">${skillObj.name}</div>
+                    </div>
+                `;
+            }
+
+            updatePosition() {
+                if(!this.element) return;
+                this.element.style.left = `${this.x}px`;
+                this.element.style.top = `${this.y}px`;
+            }
+
+            updateUI() {
+                if(!this.isAlive || !this.element) return;
+                
+                const hpPercent = Math.max(0, (this.hp / this.maxHp) * 100);
+                this.hpBarElement.style.width = `${hpPercent}%`;
+                this.hpBarElement.className = 'hp-bar';
+                if (hpPercent < 30) this.hpBarElement.classList.add('low');
+                else if (hpPercent < 60) this.hpBarElement.classList.add('med');
+
+                if (this.bikeHp > 0) {
+                    this.shieldBarElement.style.width = `${(this.bikeHp / (this.maxHp * 1.5)) * 100}%`;
+                } else if (this.maxShield > 0) {
+                    this.shieldBarElement.style.width = `${Math.max(0, (this.shield / this.maxShield) * 100)}%`;
+                }
+
+                if(this.listItemElement && !this.isMinion) {
+                    const skillObj = SKILLS.find(s => s.id === this.skill);
+                    this.updateListItemHTML(this.listItemElement, skillObj);
+                }
+                
+                this.element.style.opacity = this.isUnderground ? '0.3' : '1';
+                this.element.classList.toggle('frozen', this.stunEndTime > gameTime);
+                this.element.classList.toggle('invincible', this.isInvincibleState());
+                
+                if (this.flightEndTime > gameTime) {
+                    this.element.style.transform = `translate(-50%, -50%) scale(1.8)`;
+                    this.element.style.zIndex = '30';
+                } else {
+                    this.element.style.transform = `translate(-50%, -50%) scale(1)`;
+                    this.element.style.zIndex = '20';
+                }
+                
+                let filter = '';
+                if (this.berserkActive) filter += 'drop-shadow(0 0 10px red) ';
+                if (this.vampireActive) filter += 'drop-shadow(0 0 10px purple) ';
+                if (this.nullifyEndTime > gameTime) filter += 'grayscale(100%) ';
+                if (this.weakEndTime > gameTime) filter += 'sepia(100%) hue-rotate(-50deg) saturate(3) ';
+                this.element.style.filter = filter || '';
+            }
+
+            isInvincibleState() {
+                if (this.isInvincible) return true;
+                const aliveTeams = new Set(characters.filter(c => c.isAlive && (!c.isMinion || c.isFragment)).map(c => c.teamId)).size;
+                if (this.skill === 'final_five_invincible' && aliveTeams <= 5) return true;
+                if (this.skill === 'invincible_until_first_death' && !hasFirstDeathOccurred) return true;
+                if (this.skill === 'summon_knight' && this.knightRef && this.knightRef.isAlive) return true;
+                if (timeSlowState.active && timeSlowState.ownerTeam === this.teamId) return true;
+                if (this.flightEndTime > gameTime) return true;
+                if (this.hasteEndTime > gameTime) return true; 
+                if (this.teleportInvincibleEndTime > gameTime) return true;
+                if (this.sonicInvincibleEndTime > gameTime) return true;
+                
+                return false;
+            }
+
+            takeDamage(amount, isCritical = false, attacker = null, isPiercing = false) {
+                if(!this.isAlive || this.isUnderground) return;
+
+                let isActuallyInvincible = this.isInvincibleState();
+
+                if (isActuallyInvincible && !isPiercing) {
+                    showFloatingText(this.x, this.y, 'BLOCK!', 'text-yellow-300');
+                    return;
+                }
+
+                let dodgeChance = this.skill === 'dodge' ? 0.15 : 0;
+                if (Math.random() < dodgeChance && !isPiercing) {
+                    showFloatingText(this.x, this.y, 'Miss!', 'text-gray-300');
+                    return;
+                }
+
+                if (this.skill === 'invincible_chance' && Math.random() < 0.05 && !isPiercing) {
+                    this.isInvincible = true;
+                    showFloatingText(this.x, this.y, '無敵化!', 'text-yellow-400');
+                    setTimeout(() => { this.isInvincible = false; this.updateUI(); }, 3000);
+                    return;
+                }
+
+                if (attacker && attacker.isAlive) {
+                    const mySpeed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+                    const atkSpeed = Math.sqrt(attacker.vx*attacker.vx + attacker.vy*attacker.vy);
+                    if (mySpeed > atkSpeed) {
+                        const diff = mySpeed - atkSpeed;
+                        const reduction = Math.min(0.8, diff * 0.15);
+                        amount *= (1 - reduction);
+                    }
+                }
+
+                if (this.berserkActive) amount *= 0.5;
+                if (this.vampireActive) amount *= 0.5; 
+                if (this.skill === 'defense_x2') amount /= 2;
+                if (this.weakEndTime > gameTime) amount *= 1.5; 
+                if (this.chainBindEndTime > gameTime) amount *= 10.0; 
+
+                if (this.bikeHp > 0) {
+                    if (this.bikeHp >= amount) { this.bikeHp -= amount; amount = 0; }
+                    else { amount -= this.bikeHp; this.bikeHp = 0; this.avatar = '👤'; createEffect('effect-text', this.x, this.y, '💥', 500); }
+                } else if (this.shield > 0) {
+                    if (this.shield >= amount) { this.shield -= amount; amount = 0; }
+                    else { amount -= this.shield; this.shield = 0; }
+                }
+                
+                this.hp -= amount;
+                
+                if (amount > 0) {
+                    this.element.classList.add('hit');
+                    setTimeout(() => { if(this.element) this.element.classList.remove('hit'); }, 100);
+                    const colorClass = isCritical ? 'text-red-500 font-black text-lg' : 'text-red-300';
+                    showFloatingText(this.x, this.y, `-${Math.ceil(amount)}${isCritical?'!':''}`, colorClass);
+                    
+                    if (this.skill === 'counter_damage' && attacker && attacker.isAlive && !isPiercing) {
+                        attacker.takeDamage(amount * 0.3, false, null);
+                        showFloatingText(this.x, this.y, 'Counter!', 'text-orange-400');
+                    }
+                }
+
+                this.updateUI();
+
+                if (this.hp <= 0) {
+                    if (this.hasExtraLife) {
+                        this.hp = this.maxHp;
+                        this.hasExtraLife = false;
+                        createEffect('effect-text text-pink-500', this.x, this.y, 'REVIVE!', 1000);
+                        this.updateUI();
+                    } else {
+                        this.die(attacker);
+                    }
+                }
+            }
+
+            heal(amount) {
+                if(!this.isAlive) return;
+                const actualHeal = Math.min(this.maxHp - this.hp, amount);
+                if (actualHeal <= 0) return;
+                this.hp += actualHeal;
+                showFloatingText(this.x, this.y, `+${Math.ceil(actualHeal)}`, 'heal-text font-bold');
+                this.updateUI();
+            }
+            
+            triggerWeaponHeal() {
+                if (this.isAlive) {
+                    this.heal(this.maxHp * 0.01);
+                }
+            }
+
+            die(attacker) {
+                this.isAlive = false;
+                this.hp = 0;
+                
+                if (!this.isMinion && !this.isFragment) {
+                    hasFirstDeathOccurred = true;
+                }
+                
+                if (this.skill === 'explosion') {
+                    createEffect('effect-text text-orange-500', this.x, this.y, '💥', 500, 'font-size:120px;');
+                    characters.forEach(c => {
+                        if (c.isAlive && c.teamId !== this.teamId && getDistance(this, c) < 250 && c.skill !== 'nullify') c.takeDamage(this.atk * 9.0, false, this);
+                    });
+                }
+                
+                if (this.skill === 'destiny_bond' && attacker && attacker.isAlive && attacker.skill !== 'nullify') {
+                    createEffect('effect-text text-purple-800', attacker.x, attacker.y, '💀道連れ', 1000);
+                    attacker.takeDamage(99999, true, this, true); 
+                }
+
+                if (this.skill === 'split_on_death') {
+                    for(let i=0; i<10; i++) {
+                        const clone = new Character(this.name + ' (破片)', null, true, this.teamId);
+                        clone.isFragment = true;
+                        clone.x = this.x + (Math.random()-0.5)*40; clone.y = this.y + (Math.random()-0.5)*40;
+                        clone.avatar = this.avatar; clone.maxHp = this.maxHp * 0.2; clone.hp = clone.maxHp; 
+                        clone.atk = this.atk * 0.5; clone.speed = this.speed * 1.5; clone.radius = 10;
+                        characters.push(clone); clone.createDOM();
+                    }
+                }
+
+                if (attacker && attacker.isAlive && attacker.skill === 'triumph') {
+                    createEffect('effect-text text-yellow-400', attacker.x, attacker.y, 'LEVEL UP!', 1000);
+                    attacker.heal(attacker.maxHp * 0.3); 
+                    attacker.atk *= 1.1; 
+                }
+
+                if (this.element) {
+                    this.element.style.transform = 'translate(-50%, -50%) scale(0) rotate(180deg)';
+                    this.element.style.opacity = '0';
+                    setTimeout(() => { if(this.element) this.element.remove(); }, 500);
+                }
+                
+                if (this.listItemElement && !this.isMinion) {
+                    this.listItemElement.classList.add('opacity-50', 'grayscale');
+                    this.listItemElement.querySelector('.font-bold').classList.add('line-through');
+                }
+                checkWinCondition();
+            }
+
+            normalizeSpeed() {
+                let currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                let targetSpeed = this.speed;
+                
+                if (this.berserkActive) targetSpeed *= 1.5;
+                if (this.vampireActive) targetSpeed *= 1.5;
+                if (this.hasteEndTime > gameTime) targetSpeed *= 1.3;
+                
+                if (this.skill === 'invincible_until_first_death' && !hasFirstDeathOccurred) targetSpeed *= 0.5;
+                if (timeSlowState.active && timeSlowState.ownerTeam !== this.teamId) targetSpeed *= 0.5;
+                if (this.weakEndTime > gameTime) targetSpeed *= 0.5;
+
+                if (this.skill === 'summon_knight' && this.knightRef && this.knightRef.isAlive) targetSpeed = 1.0;
+                
+                if (timeStopState.active && timeStopState.ownerTeam === this.teamId) targetSpeed *= 5.0;
+
+                // 速度の最大値を200に制限
+                targetSpeed = Math.min(targetSpeed, 200);
+
+                if (currentSpeed > 0) {
+                    this.vx = (this.vx / currentSpeed) * targetSpeed;
+                    this.vy = (this.vy / currentSpeed) * targetSpeed;
+                } else {
+                    const angle = Math.random() * Math.PI * 2;
+                    this.vx = Math.cos(angle) * targetSpeed;
+                    this.vy = Math.sin(angle) * targetSpeed;
+                }
+            }
+
+            checkCooldown(skillKey, interval) {
+                if (!this.lastSkills[skillKey]) this.lastSkills[skillKey] = 0;
+                const adjustedInterval = (this.wizardEndTime > gameTime) ? interval * 0.2 : interval;
+                if (gameTime - this.lastSkills[skillKey] > adjustedInterval) {
+                    this.lastSkills[skillKey] = gameTime;
+                    return true;
+                }
+                return false;
+            }
+
+            getNearestEnemy() {
+                let nearest = null; let minDist = Infinity;
+                for (let c of characters) {
+                    if (c.isAlive && c.teamId !== this.teamId && !c.isUnderground) {
+                        const d = getDistance(this, c);
+                        if (d < minDist) { minDist = d; nearest = c; }
+                    }
+                }
+                return nearest;
+            }
+
+            act() {
+                if (!this.isAlive) return;
+                if (timeStopState.active && timeStopState.ownerTeam !== this.teamId) return;
+                
+                if (this.skill !== 'nullify' && this.stunEndTime > gameTime) { 
+                    this.updatePosition(); 
+                    return; 
+                }
+                
+                const isNullified = (this.nullifyEndTime > gameTime && this.skill !== 'nullify');
+                let activeSkill = this.skill;
+                const isWizardMagic = (this.skill === 'wizard_mode' && activeSkill !== 'wizard_mode');
+
+                if (this.wizardEndTime > gameTime) {
+                    // 追加能力を含める場合もあるが基本魔法に限定
+                    const magicSkills = ['ranged_shot', 'random_lightning', 'flamethrower', 'rainbow_beam', 'tornado', 'freeze_aura', 'emoji_launcher'];
+                    activeSkill = magicSkills[Math.floor(Math.random() * magicSkills.length)];
+                }
+
+                if (!isNullified) {
+                    if (activeSkill === 'scaling_atk') this.atk += 0.03; 
+                    if (activeSkill === 'scaling_spd') this.speed = Math.min(this.speed + 0.015, 200); 
+                    if (activeSkill === 'regeneration' && gameTime % 1000 < TICK_RATE) this.heal(this.maxHp * 0.02);
+                    
+                    if (activeSkill === 'self_heal' && !this.usedBurstHeal && this.hp < this.maxHp * 0.3) {
+                        this.usedBurstHeal = true; this.heal(this.maxHp * 0.5); createEffect('effect-text text-green-400', this.x, this.y, 'FULL HEAL!', 1000);
+                    }
+
+                    if (activeSkill === 'berserk' && !this.berserkActive && this.hp < this.maxHp * 0.3) {
+                        this.berserkActive = true; 
+                        createEffect('effect-text text-red-600', this.x, this.y, 'BERSERK!!', 2000);
+                    }
+                    
+                    if (activeSkill === 'vampire_lord' && !this.vampireActive && this.hp < this.maxHp * 0.5) {
+                        this.vampireActive = true; 
+                        createEffect('effect-text text-rose-700', this.x, this.y, 'BLOOD!', 2000);
+                    }
+
+                    if (activeSkill === 'spinning_blade') {
+                        createEffect('tornado-effect text-gray-300', this.x, this.y, '⚙️', TICK_RATE*2, `width:${this.radius*4}px;height:${this.radius*4}px;`);
+                        if (gameTime % 200 < TICK_RATE) {
+                            characters.forEach(c => {
+                                if (c.isAlive && c.teamId !== this.teamId && c.skill !== 'nullify' && getDistance(this, c) < this.radius*3.5) {
+                                    c.takeDamage(this.atk * 0.2, false, this);
+                                    this.triggerWeaponHeal();
+                                }
+                            });
+                        }
+                    }
+
+                    if (activeSkill === 'death_stare') {
+                        characters.forEach(c => {
+                            if (c.isAlive && c.teamId !== this.teamId && getDistance(this, c) < 100) {
+                                let time = this.stareTargets.get(c.id) || 0;
+                                time += TICK_RATE;
+                                this.stareTargets.set(c.id, time);
+                                if (time > 2000) { 
+                                    if(c.skill !== 'nullify') c.takeDamage(99999, true, this); 
+                                    this.stareTargets.set(c.id, 0); 
+                                }
+                            } else {
+                                this.stareTargets.set(c.id, 0);
+                            }
+                        });
+                    }
+
+                    if (activeSkill === 'border_spikes') globalSpikesActive = true;
+
+                    if (activeSkill === 'ranged_shot' && this.checkCooldown('ranged', 1000)) {
+                        const target = this.getNearestEnemy();
+                        if (target) {
+                            const angle = Math.atan2(target.y - this.y, target.x - this.x);
+                            gameObjects.push(new Projectile(this, angle, 'text-gray-300', '●', 10, this.atk * 2.4, true));
+                        }
+                    }
+
+                    if (activeSkill === 'emoji_launcher' && this.checkCooldown('emoji_launcher', 1500)) {
+                        const target = this.getNearestEnemy();
+                        if (target) {
+                            const angle = Math.atan2(target.y - this.y, target.x - this.x);
+                            const face = EMOJI_FACES[Math.floor(Math.random() * EMOJI_FACES.length)];
+                            gameObjects.push(new Projectile(this, angle, 'text-yellow-400 font-bold', face, 12, this.atk * 8.0, true));
+                        }
+                    }
+
+                    if (activeSkill === 'gatling' && this.checkCooldown('gatling_main', 3000)) {
+                        const target = this.getNearestEnemy();
+                        if (target) {
+                            this.gatlingShots = 15;
+                            this.gatlingTargetAngle = Math.atan2(target.y - this.y, target.x - this.x);
+                        }
+                    }
+                    if (this.gatlingShots > 0 && gameTime % 100 < TICK_RATE * 2) {
+                        this.gatlingShots--;
+                        const angle = this.gatlingTargetAngle + (Math.random() - 0.5) * 0.3;
+                        gameObjects.push(new Projectile(this, angle, 'text-yellow-500 font-bold', '🔸', 15, this.atk * 0.9, true));
+                    }
+
+                    if (activeSkill === 'slow_zone' && this.checkCooldown('slow', 3000)) zones.push(new Zone(this.x, this.y, 60, 'bg-blue-500 opacity-30', 'slow', this.teamId, 5000));
+                    if (activeSkill === 'poison_zone' && this.checkCooldown('poison', 4000)) zones.push(new Zone(this.x, this.y, 60, 'bg-purple-600 opacity-40', 'poison', this.teamId, 5000, this.atk * 0.1));
+                    if (activeSkill === 'pitfall' && this.checkCooldown('pitfall', 5000)) {
+                        zones.push(new Zone(this.x, this.y, 30, 'bg-black opacity-80', 'pitfall', this.teamId, 10000, this.atk, this));
+                    }
+                    
+                    if (activeSkill === 'wall_create' && this.checkCooldown('wall', 15000)) {
+                        const aliveTeamsForWall = new Set(characters.filter(c => c.isAlive && (!c.isMinion || c.isFragment)).map(c => c.teamId)).size;
+                        if (aliveTeamsForWall > 2) {
+                            for(let i=0; i<8; i++) {
+                                const a = (Math.PI / 4) * i;
+                                zones.push(new WallZone(this.x + Math.cos(a)*40, this.y + Math.sin(a)*40, 20, this.teamId, 4000));
+                            }
+                        } else {
+                            showFloatingText(this.x, this.y, 'No Wall', 'text-stone-400');
+                        }
+                    }
+
+                    if (activeSkill === 'teleport' && this.checkCooldown('tp', 6000)) {
+                        createEffect('effect-text text-indigo-400', this.x, this.y, '💨', 300);
+                        const angle = Math.random() * Math.PI * 2; const r = Math.random() * (currentBattlefieldRadius - this.radius);
+                        this.x = BATTLEFIELD_SIZE/2 + Math.cos(angle) * r; this.y = BATTLEFIELD_SIZE/2 + Math.sin(angle) * r;
+                        this.teleportInvincibleEndTime = gameTime + 2000;
+                        createEffect('effect-text text-indigo-400', this.x, this.y, '💨', 300);
+                    }
+
+                    if (activeSkill === 'underground' && this.checkCooldown('under', 7000)) {
+                        this.isUnderground = true;
+                        createEffect('effect-text text-amber-900', this.x, this.y, '🕳️', 500);
+                        setTimeout(() => {
+                            if(!this.isAlive) return;
+                            this.isUnderground = false;
+                            this.checkWallCollision();
+                            this.updatePosition();
+                            createEffect('effect-text text-amber-900', this.x, this.y, '💥', 500, 'font-size:40px;');
+                            characters.forEach(c => { if(c.isAlive && c.teamId !== this.teamId && getDistance(this, c)<80) c.takeDamage(this.atk*2, false, this); });
+                        }, 4000);
+                    }
+
+                    if (activeSkill === 'random_lightning' && this.checkCooldown('lightning', 2000)) {
+                        const target = this.getNearestEnemy();
+                        if (target && target.skill !== 'nullify') {
+                            createEffect('effect-text text-yellow-300', target.x, target.y - 20, '⚡', 500, 'font-size: 40px;');
+                            target.takeDamage(this.atk * 4.5, false, this);
+                            this.triggerWeaponHeal();
+                        }
+                    }
+
+                    if (activeSkill === 'flamethrower' && this.checkCooldown('flame', 3000)) {
+                        const angle = Math.atan2(this.vy, this.vx);
+                        createEffect('effect-text text-red-500', this.x + Math.cos(angle)*80, this.y + Math.sin(angle)*80, '🔥', 600, 'font-size:100px;');
+                        characters.forEach(c => {
+                            if (c.isAlive && c.teamId !== this.teamId && c.skill !== 'nullify' && getDistance(this, c) < 250) {
+                                let diff = Math.abs(Math.atan2(c.y - this.y, c.x - this.x) - angle);
+                                if (diff > Math.PI) diff = Math.PI * 2 - diff;
+                                if (diff < Math.PI / 4) {
+                                    c.takeDamage(this.atk * 6.0, false, this);
+                                    this.triggerWeaponHeal();
+                                }
+                            }
+                        });
+                    }
+                    
+                    if (activeSkill === 'acid_spray' && this.checkCooldown('acid', 3500)) {
+                        const angle = Math.atan2(this.vy, this.vx);
+                        createEffect('effect-text text-green-500', this.x + Math.cos(angle)*60, this.y + Math.sin(angle)*60, '💦', 600, 'font-size:80px;');
+                        characters.forEach(c => {
+                            if (c.isAlive && c.teamId !== this.teamId && c.skill !== 'nullify' && getDistance(this, c) < 200) {
+                                let diff = Math.abs(Math.atan2(c.y - this.y, c.x - this.x) - angle);
+                                if (diff > Math.PI) diff = Math.PI * 2 - diff;
+                                if (diff < Math.PI / 4) { 
+                                    c.takeDamage(this.atk * 3.0, false, this); c.speed *= 0.8; 
+                                    this.triggerWeaponHeal();
+                                }
+                            }
+                        });
+                    }
+
+                    if (activeSkill === 'clone' && this.checkCooldown('clone', 10000)) {
+                        const clone = new Character(this.name + ' (分身)', null, true, this.teamId);
+                        clone.x = this.x + 20; clone.y = this.y + 20;
+                        clone.avatar = this.avatar; clone.maxHp = this.maxHp * 0.2; clone.hp = clone.maxHp; clone.atk = this.atk * 0.5; clone.speed = this.speed;
+                        characters.push(clone); clone.createDOM();
+                    }
+                    
+                    if (activeSkill === 'summon_pet' && this.checkCooldown('pet', 8000)) {
+                        const pet = new Character(this.name + 'のペット', mulberry32(gameTime), true, this.teamId);
+                        pet.x = this.x - 20; pet.y = this.y - 20; pet.speed = this.speed * 1.2;
+                        characters.push(pet); pet.createDOM();
+                    }
+
+                    if (activeSkill === 'summon_knight' && !this.hasSummonedKnight && this.checkCooldown('knight', 12000)) {
+                        this.hasSummonedKnight = true;
+                        const knight = new Character('騎士', null, true, this.teamId);
+                        knight.avatar = '🛡️'; 
+                        knight.maxHp = this.maxHp * 0.5; knight.hp = knight.maxHp; 
+                        knight.atk = this.atk * 1.5; knight.speed = this.speed; knight.radius = 20;
+                        knight.x = this.x + 30; knight.y = this.y + 30;
+                        characters.push(knight); knight.createDOM();
+                        this.knightRef = knight;
+                    }
+
+                    if (activeSkill === 'rainbow_beam' && this.checkCooldown('beam', 6000)) {
+                        const repeat = isWizardMagic ? 1 : 3;
+                        let rCount = 0;
+                        const rInt = setInterval(() => {
+                            if (!this.isAlive || rCount++ >= repeat || !isPlaying) return clearInterval(rInt);
+                            const angle = Math.atan2(this.vy, this.vx);
+                            createEffect('beam-effect', this.x, this.y, '', 600, `width:1000px; height:40px; background:linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet); transform: translateY(-50%) rotate(${angle * 180 / Math.PI}deg);`);
+                            characters.forEach(c => {
+                                if (c.isAlive && c.teamId !== this.teamId && c.skill !== 'nullify') {
+                                    let diff = Math.abs(Math.atan2(c.y - this.y, c.x - this.x) - angle);
+                                    if (diff > Math.PI) diff = Math.PI * 2 - diff;
+                                    if (diff < 0.1) {
+                                        c.takeDamage(this.atk * 9.0, true, this);
+                                        this.triggerWeaponHeal();
+                                    }
+                                }
+                            });
+                        }, 300);
+                    }
+                    
+                    if (activeSkill === 'homing_laser' && this.checkCooldown('homing', 2500)) {
+                        const target = this.getNearestEnemy();
+                        if (target) {
+                            gameObjects.push(new HomingProjectile(this, target, 'text-cyan-400 font-bold', '☄️', 12, this.atk * 3.6, true));
+                        }
+                    }
+
+                    if (activeSkill === 'sonic_wave' && this.checkCooldown('sonic', 3500)) {
+                        this.stunEndTime = gameTime + 1000;
+                        this.sonicInvincibleEndTime = gameTime + 1000;
+                        let count = 0;
+                        const interval = setInterval(() => {
+                            if (!this.isAlive || count >= 5 || !isPlaying) return clearInterval(interval);
+                            createEffect('zone border-4 border-teal-300', this.x, this.y, '', 400, 'width: 300px; height: 300px; transition: width 0.4s, height 0.4s;');
+                            characters.forEach(c => {
+                                if (c.isAlive && c.teamId !== this.teamId && getDistance(this, c) < 150) {
+                                    if(c.skill !== 'nullify') {
+                                        c.takeDamage(this.atk * 3.0, false, this);
+                                        c.vx += (c.x - this.x) * 0.2; c.vy += (c.y - this.y) * 0.2; 
+                                    }
+                                }
+                            });
+                            count++;
+                        }, 200);
+                    }
+                    
+                    if (activeSkill === 'water_push' && this.checkCooldown('water', 4000)) {
+                        createEffect('zone bg-blue-300 opacity-50', this.x, this.y, '', 300, 'width: 350px; height: 350px; transition: width 0.3s, height 0.3s;');
+                        characters.forEach(c => {
+                            if (c.isAlive && c.teamId !== this.teamId && c.skill !== 'nullify' && getDistance(this, c) < 175) {
+                                c.takeDamage(this.atk * 1.5, false, this);
+                                c.vx += (c.x - this.x) * 0.5; c.vy += (c.y - this.y) * 0.5; 
+                            }
+                        });
+                    }
+
+                    if (activeSkill === 'slash' && this.checkCooldown('slash', 2000)) {
+                        const target = this.getNearestEnemy();
+                        if (target && target.skill !== 'nullify' && getDistance(this, target) < 120) {
+                            createEffect('slash-effect text-white', (this.x + target.x)/2, (this.y + target.y)/2, '⚔️', 200, 'font-size: 50px;');
+                            target.takeDamage(this.atk * 7.5, true, this);
+                            this.triggerWeaponHeal();
+                        }
+                    }
+                    
+                    if (activeSkill === 'giant_punch' && this.checkCooldown('punch', 4000)) {
+                        const target = this.getNearestEnemy();
+                        if (target && target.skill !== 'nullify' && getDistance(this, target) < 100) {
+                            createEffect('slash-effect text-orange-500', target.x, target.y, '🥊', 300, 'font-size:80px;');
+                            target.takeDamage(this.atk * 12.0, true, this);
+                            target.vx += (target.x - this.x) * 0.8; target.vy += (target.y - this.y) * 0.8;
+                            this.triggerWeaponHeal();
+                        }
+                    }
+
+                    if (activeSkill === 'tornado' && this.checkCooldown('tornado', 4500)) {
+                        const life = isWizardMagic ? 150 : 400; 
+                        gameObjects.push(new Tornado(this.x, this.y, this.teamId, this.atk * 1.5, life));
+                    }
+                    
+                    if (activeSkill === 'bomb_throw' && this.checkCooldown('bomb', 3500)) {
+                        const target = this.getNearestEnemy();
+                        if(target) gameObjects.push(new Bomb(target.x, target.y, this.teamId, this.atk * 9.0));
+                    }
+                    
+                    if (activeSkill === 'knife_throw' && this.checkCooldown('knife', 3500)) {
+                        for(let i=0; i<12; i++) {
+                            const angle = (Math.PI / 6) * i;
+                            gameObjects.push(new Projectile(this, angle, 'text-gray-300 font-bold', '🗡️', 14, this.atk * 3.0, true)); 
+                        }
+                    }
+
+                    if (activeSkill === 'freeze_aura' && this.checkCooldown('freeze', 7000)) {
+                        const repeat = isWizardMagic ? 1 : 3;
+                        let rCount = 0;
+                        const rInt = setInterval(() => {
+                            if (!this.isAlive || rCount++ >= repeat || !isPlaying) return clearInterval(rInt);
+                            createEffect('zone bg-cyan-200 opacity-50', this.x, this.y, '', 300, 'width: 240px; height: 240px;');
+                            characters.forEach(c => {
+                                if (c.isAlive && c.teamId !== this.teamId && c.skill !== 'nullify' && getDistance(this, c) < 120) { 
+                                    c.stunEndTime = gameTime + 2500; 
+                                    showFloatingText(c.x, c.y, 'FREEZE!', 'text-cyan-300'); 
+                                    this.triggerWeaponHeal();
+                                }
+                            });
+                        }, 400);
+                    }
+                    
+                    if (activeSkill === 'chain_bind' && this.checkCooldown('chain', 8000)) {
+                        const target = this.getNearestEnemy();
+                        if (target && target.skill !== 'nullify' && getDistance(this, target) < 150) {
+                            target.stunEndTime = gameTime + 3000;
+                            target.chainBindEndTime = gameTime + 3000;
+                            createEffect('beam-effect', this.x, this.y, '', 3000, `width:${getDistance(this, target)}px; height:5px; background:gray; transform: translateY(-50%) rotate(${Math.atan2(target.y-this.y, target.x-this.x)*180/Math.PI}deg);`);
+                            showFloatingText(target.x, target.y, 'BIND!', 'text-stone-400');
+                        }
+                    }
+
+                    if (activeSkill === 'time_stop' && this.checkCooldown('timestop', 15000)) {
+                        timeStopState = { active: true, ownerTeam: this.teamId, endTime: gameTime + 3000 };
+                        ui.timeStopOverlay.classList.remove('hidden');
+                        setTimeout(() => ui.timeStopOverlay.classList.add('hidden'), 3000);
+                    }
+                    
+                    if (activeSkill === 'time_slow' && this.checkCooldown('timeslow', 12000)) {
+                        timeSlowState = { active: true, ownerTeam: this.teamId, endTime: gameTime + 4000 };
+                        createEffect('effect-text text-indigo-300', BATTLEFIELD_SIZE/2, BATTLEFIELD_SIZE/2, 'SLOW DOWN', 1000, 'font-size: 60px;');
+                    }
+
+                    if (activeSkill === 'expand_domain' && !this.usedExpandDomain && currentBattlefieldRadius < BATTLEFIELD_SIZE/3) {
+                        this.usedExpandDomain = true;
+                        currentBattlefieldRadius = BATTLEFIELD_SIZE / 2;
+                        this.heal(this.maxHp);
+                        createEffect('effect-text text-emerald-300', BATTLEFIELD_SIZE/2, BATTLEFIELD_SIZE/2, 'DOMAIN EXPANSION', 2000, 'font-size: 60px;');
+                    }
+
+                    if (activeSkill === 'jet_dash' && this.checkCooldown('jet', 5000)) {
+                        const angle = Math.atan2(this.vy, this.vx);
+                        this.vx = Math.cos(angle) * this.speed * 8; 
+                        this.vy = Math.sin(angle) * this.speed * 8;
+                        createEffect('effect-text text-red-400', this.x, this.y, '💨', 500);
+                    }
+                    
+                    if (activeSkill === 'flying' && this.checkCooldown('fly_active', 8000)) {
+                        this.flightEndTime = gameTime + 4000;
+                        createEffect('effect-text text-sky-300', this.x, this.y, '🦅', 500);
+                        this.updateUI();
+                    }
+
+                    if (activeSkill === 'warp_gate' && this.checkCooldown('warp_gate', 15000)) {
+                        const r = currentBattlefieldRadius - 30;
+                        const a1 = Math.random()*Math.PI*2; const a2 = Math.random()*Math.PI*2;
+                        const p1 = {x: BATTLEFIELD_SIZE/2 + Math.cos(a1)*r, y: BATTLEFIELD_SIZE/2 + Math.sin(a1)*r};
+                        const p2 = {x: BATTLEFIELD_SIZE/2 + Math.cos(a2)*r, y: BATTLEFIELD_SIZE/2 + Math.sin(a2)*r};
+                        gameObjects.push(new WarpGate(p1.x, p1.y, p2.x, p2.y, 10000, this.teamId));
+                    }
+                    
+                    if (activeSkill === 'team_haste' && this.checkCooldown('haste', 10000)) {
+                        characters.forEach(c => {
+                            if(c.isAlive && c.teamId === this.teamId) {
+                                c.hasteEndTime = gameTime + 5000;
+                                showFloatingText(c.x, c.y, 'SPEED UP!', 'text-cyan-200');
+                            }
+                        });
+                    }
+                    
+                    if (activeSkill === 'wizard_mode' && this.checkCooldown('wizard', 15000)) {
+                        this.wizardEndTime = gameTime + 5000;
+                        createEffect('effect-text text-violet-500', this.x, this.y, '🪄 WIZARD MODE!', 1000);
+                    }
+
+                    if (activeSkill === 'magnet_repel' && this.checkCooldown('magnet', 4000)) {
+                        createEffect('zone border-4 border-pink-300 opacity-50', this.x, this.y, '', 300, 'width: 250px; height: 250px;');
+                        characters.forEach(c => {
+                            if (c.isAlive && c.teamId !== this.teamId && getDistance(this, c) < 125) {
+                                const d = getDistance(this, c);
+                                if(d > 0) { 
+                                    c.vx += (c.x - this.x)/d * 8; 
+                                    c.vy += (c.y - this.y)/d * 8; 
+                                }
+                            }
+                        });
+                        showFloatingText(this.x, this.y, 'REPEL!', 'text-pink-300');
+                    }
+                }
+
+                this.normalizeSpeed();
+                this.x += this.vx;
+                this.y += this.vy;
+                this.checkWallCollision();
+                this.updatePosition();
+            }
+
+            checkWallCollision() {
+                if (this.isUnderground) return;
+
+                const cx = BATTLEFIELD_SIZE / 2; const cy = BATTLEFIELD_SIZE / 2;
+                const dx = this.x - cx; const dy = this.y - cy;
+                const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+                const r = currentBattlefieldRadius - this.radius;
+
+                if (distFromCenter > r && r > 0) {
+                    const nx = dx / distFromCenter; const ny = dy / distFromCenter;
+                    this.x = cx + nx * r; this.y = cy + ny * r;
+
+                    const dot = this.vx * nx + this.vy * ny;
+                    if (dot > 0) { 
+                        this.vx -= 2 * dot * nx; this.vy -= 2 * dot * ny;
+                        
+                        if (this.skill === 'accelerate_on_bounce') { 
+                            this.speed += 0.5; 
+                            this.heal(10);
+                        }
+                        this.normalizeSpeed();
+                        
+                        if (globalSpikesActive && this.teamId !== characters.find(c=>c.skill==='border_spikes')?.teamId) {
+                            if (gameTime - (this.lastSpikeDamageTime || 0) > 500) {
+                                this.takeDamage(10, false, null);
+                                this.lastSpikeDamageTime = gameTime;
+                                
+                                const spikeOwner = characters.find(c => c.skill === 'border_spikes' && c.isAlive);
+                                if (spikeOwner) {
+                                    spikeOwner.heal(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            attack(target) {
+                let damage = this.atk * (0.8 + Math.random() * 0.4);
+                let isCrit = false;
+                
+                if (this.skill === 'summon_knight' && this.knightRef && this.knightRef.isAlive) {
+                    damage = 1 * (0.8 + Math.random() * 0.4);
+                }
+                
+                if (timeStopState.active && timeStopState.ownerTeam === this.teamId) {
+                    damage *= 150.0;
+                }
+
+                if (this.skill === 'nullify' && target.isInvincibleState()) {
+                    damage = 999999;
+                    createEffect('effect-text text-gray-500', target.x, target.y, 'NULLIFIED!', 1000);
+                }
+
+                if (this.skill === 'critical' && Math.random() < 0.10) { damage *= 20; isCrit = true; }
+                
+                if (this.skill === 'instant_kill' && Math.random() < 0.01) {
+                    damage = 99999; createEffect('effect-text text-red-900', target.x, target.y, 'DEATH!', 1000);
+                }
+
+                let isVampireHit = this.skill === 'vampire' || this.vampireActive;
+
+                target.takeDamage(damage, isCrit, this, this.skill === 'nullify');
+                
+                if (this.skill === 'seven_attacks') {
+                    for (let i = 1; i < 7; i++) {
+                        setTimeout(() => { if(target.isAlive && this.isAlive) target.takeDamage(damage*0.8, false, this, this.skill === 'nullify'); }, 100 * i);
+                    }
+                    this.sevenAttackCount++;
+                    if (this.sevenAttackCount >= 7) {
+                        this.sevenAttackCount = 0;
+                        this.heal(77);
+                    }
+                }
+
+                if (isVampireHit && target.hp > 0) this.heal(damage * 0.5);
+                
+                if (this.skill === 'scaling_spd') {
+                    const mySpd = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+                    const tgSpd = Math.sqrt(target.vx*target.vx + target.vy*target.vy);
+                    if (mySpd > tgSpd) {
+                        this.heal(this.maxHp * 0.02);
+                    }
+                }
+
+                if (this.skill === 'super_knockback') {
+                    const nx = target.x - this.x; const ny = target.y - this.y;
+                    const dist = Math.max(1, Math.sqrt(nx*nx + ny*ny));
+                    target.vx = (nx/dist) * 20; target.vy = (ny/dist) * 20;
+                }
+            }
+        }
+
+        class Projectile {
+            constructor(owner, angle, colorClass, icon, speed, damage, healOwner = false) {
+                this.owner = owner; this.x = owner.x; this.y = owner.y;
+                this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+                this.damage = damage; this.isAlive = true;
+                this.healOwner = healOwner;
+                
+                this.el = document.createElement('div');
+                this.el.className = `projectile ${colorClass} text-lg`;
+                this.el.textContent = icon;
+                ui.battlefield.appendChild(this.el);
+            }
+            update() {
+                if(!this.isAlive) return;
+                this.x += this.vx; this.y += this.vy;
+                this.el.style.left = `${this.x}px`; this.el.style.top = `${this.y}px`;
+                
+                const dx = this.x - BATTLEFIELD_SIZE/2; const dy = this.y - BATTLEFIELD_SIZE/2;
+                if(Math.sqrt(dx*dx + dy*dy) > currentBattlefieldRadius) { this.die(); return; }
+
+                for (let c of characters) {
+                    if (c.isAlive && c.teamId !== this.owner.teamId && !c.isUnderground && c.skill !== 'nullify') {
+                        if (getDistance(this, c) < c.radius + 8) {
+                            c.takeDamage(this.damage, false, this.owner);
+                            if (this.healOwner && this.owner.isAlive) {
+                                this.owner.triggerWeaponHeal();
+                            }
+                            this.die(); return;
+                        }
+                    }
+                }
+            }
+            die() { this.isAlive = false; this.el.remove(); }
+        }
+
+        class HomingProjectile extends Projectile {
+            constructor(owner, target, colorClass, icon, speed, damage, healOwner = false) {
+                const initAngle = Math.atan2(target.y - owner.y, target.x - owner.x);
+                super(owner, initAngle, colorClass, icon, speed, damage, healOwner);
+                this.target = target;
+                this.baseSpeed = speed;
+            }
+            update() {
+                if(!this.isAlive) return;
+                if(this.target && this.target.isAlive) {
+                    const currentAngle = Math.atan2(this.vy, this.vx);
+                    const targetAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                    
+                    let diff = targetAngle - currentAngle;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    
+                    const turnSpeed = 0.15;
+                    const turn = Math.max(-turnSpeed, Math.min(turnSpeed, diff));
+                    
+                    const newAngle = currentAngle + turn;
+                    this.vx = Math.cos(newAngle) * this.baseSpeed;
+                    this.vy = Math.sin(newAngle) * this.baseSpeed;
+                }
+                super.update();
+            }
+        }
+
+        class Bomb {
+            constructor(x, y, teamId, damage) {
+                this.x = x; this.y = y; this.teamId = teamId; this.damage = damage;
+                this.endTime = gameTime + 2000;
+                this.el = document.createElement('div');
+                this.el.className = `projectile text-red-500 text-2xl`;
+                this.el.textContent = '💣';
+                this.el.style.left = `${x}px`; this.el.style.top = `${y}px`;
+                ui.battlefield.appendChild(this.el);
+            }
+            update() {
+                if(gameTime > this.endTime) {
+                    createEffect('effect-text text-red-500', this.x, this.y, '💥', 500, 'font-size:100px;');
+                    characters.forEach(c => {
+                        if(c.isAlive && c.teamId !== this.teamId && c.skill !== 'nullify' && getDistance(this, c) < 150) {
+                            c.takeDamage(this.damage, false, null);
+                            const owner = characters.find(ch => ch.id === this.teamId);
+                            if(owner && owner.isAlive) owner.triggerWeaponHeal();
+                        }
+                    });
+                    this.el.remove(); return false;
+                }
+                this.el.style.opacity = (Math.floor(gameTime / 200) % 2 === 0) ? '1' : '0.5';
+                return true;
+            }
+        }
+
+        class Tornado {
+            constructor(x, y, teamId, damage, life = 300) {
+                this.x = x; this.y = y; this.teamId = teamId; this.damage = damage;
+                this.vx = (Math.random() - 0.5) * 4; this.vy = (Math.random() - 0.5) * 4;
+                this.life = life; 
+                this.el = document.createElement('div');
+                this.el.className = `tornado-effect text-gray-400 opacity-70`;
+                this.el.textContent = '🌪️';
+                ui.battlefield.appendChild(this.el);
+            }
+            update() {
+                if(this.life-- <= 0) { this.el.remove(); return false; }
+                this.vx += (Math.random() - 0.5); this.vy += (Math.random() - 0.5);
+                const speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+                if(speed > 3) { this.vx = (this.vx/speed)*3; this.vy = (this.vy/speed)*3; }
+                
+                this.x += this.vx; this.y += this.vy;
+                this.el.style.left = `${this.x}px`; this.el.style.top = `${this.y}px`;
+
+                if (gameTime % 200 < TICK_RATE) {
+                    characters.forEach(c => {
+                        if(c.isAlive && c.teamId !== this.teamId && !c.isFlying && !c.isUnderground && c.skill !== 'nullify') {
+                            const d = getDistance(this, c);
+                            if(d < 200) {
+                                c.x += (this.x - c.x) * 0.05; c.y += (this.y - c.y) * 0.05;
+                                if(d < 80) {
+                                    c.takeDamage(this.damage, false, null);
+                                    const owner = characters.find(ch => ch.id === this.teamId);
+                                    if(owner && owner.isAlive) owner.triggerWeaponHeal();
+                                }
+                            }
+                        }
+                    });
+                }
+                return true;
+            }
+        }
+
+        class Zone {
+            constructor(x, y, radius, colorClasses, type, teamId, duration, value=0, owner=null) {
+                this.x = x; this.y = y; this.radius = radius; this.type = type; this.teamId = teamId;
+                this.endTime = gameTime + duration; this.value = value; this.owner = owner;
+                this.el = document.createElement('div');
+                this.el.className = `zone ${colorClasses}`;
+                this.el.style.width = `${radius*2}px`; this.el.style.height = `${radius*2}px`;
+                this.el.style.left = `${x}px`; this.el.style.top = `${y}px`;
+                ui.battlefield.appendChild(this.el);
+            }
+            update() {
+                if(gameTime > this.endTime) { this.el.remove(); return false; }
+                if (gameTime % 200 < TICK_RATE) {
+                    characters.forEach(c => {
+                        if(c.isAlive && c.teamId !== this.teamId && !c.isFlying && !c.isUnderground && c.skill !== 'nullify') {
+                            if(getDistance(this, c) < this.radius + c.radius) {
+                                if (this.type === 'slow') { c.vx *= 0.5; c.vy *= 0.5; } 
+                                else if (this.type === 'poison') { c.takeDamage(this.value, false, null); } 
+                                else if (this.type === 'pitfall') {
+                                    c.stunEndTime = gameTime + 2000; c.takeDamage(this.value, false, null); this.endTime = 0;
+                                    if (this.owner && this.owner.isAlive) {
+                                        this.owner.heal(this.owner.maxHp * 0.05);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                return true;
+            }
+        }
+
+        class WallZone extends Zone {
+            constructor(x, y, radius, teamId, duration) {
+                super(x, y, radius, 'bg-stone-600 opacity-80 border-2 border-stone-400', 'wall', teamId, duration);
+            }
+            update() {
+                if(gameTime > this.endTime) { this.el.remove(); return false; }
+                characters.forEach(c => {
+                    if(c.isAlive && !c.isUnderground && c.skill !== 'nullify') {
+                        const d = getDistance(this, c);
+                        const minDist = this.radius + c.radius;
+                        if(d < minDist) {
+                            const overlap = minDist - d;
+                            const nx = (c.x - this.x) / d; const ny = (c.y - this.y) / d;
+                            c.x += nx * overlap; c.y += ny * overlap;
+                        }
+                    }
+                });
+                return true;
+            }
+        }
+
+        class WarpGate {
+            constructor(x1, y1, x2, y2, duration, ownerTeam) {
+                this.p1 = {x: x1, y: y1}; this.p2 = {x: x2, y: y2};
+                this.endTime = gameTime + duration;
+                this.ownerTeam = ownerTeam;
+                this.el1 = createEffect('zone bg-fuchsia-500 opacity-50 animate-pulse', x1, y1, '🌀', 0, 'width:40px;height:40px;');
+                this.el2 = createEffect('zone bg-fuchsia-500 opacity-50 animate-pulse', x2, y2, '🌀', 0, 'width:40px;height:40px;');
+                this.cooldowns = new Map();
+            }
+            update() {
+                if(gameTime > this.endTime) { this.el1.remove(); this.el2.remove(); return false; }
+                characters.forEach(c => {
+                    if(c.isAlive && !c.isUnderground && c.skill !== 'nullify') {
+                        if((this.cooldowns.get(c.id)||0) > gameTime) return;
+                        if(getDistance(c, this.p1) < 20) {
+                            c.x = this.p2.x; c.y = this.p2.y; this.cooldowns.set(c.id, gameTime + 2000);
+                            if (c.teamId !== this.ownerTeam) c.weakEndTime = gameTime + 3000;
+                            createEffect('effect-text text-fuchsia-300', c.x, c.y, 'WARP', 500);
+                        } else if(getDistance(c, this.p2) < 20) {
+                            c.x = this.p1.x; c.y = this.p1.y; this.cooldowns.set(c.id, gameTime + 2000);
+                            if (c.teamId !== this.ownerTeam) c.weakEndTime = gameTime + 3000;
+                            createEffect('effect-text text-fuchsia-300', c.x, c.y, 'WARP', 500);
+                        }
+                    }
+                });
+                return true;
+            }
+        }
+
+        function prepareGame() {
+            const inputText = ui.nameInput.value.trim();
+            if (!inputText) return false;
+
+            let names = inputText.split(/[,\n、]/).map(n => n.trim()).filter(n => n.length > 0);
+            names = [...new Set(names)].slice(0, MAX_PLAYERS);
+            
+            if (names.length < 2) return false;
+
+            ui.battlefield.innerHTML = `
+                <div id="battlefield-floor"></div>
+                <div id="battlefield-bg">
+                    <div id="danger-zone"></div>
+                </div>
+            `;
+            ui.battlefieldBg = document.getElementById('battlefield-bg');
+            ui.characterList.innerHTML = '';
+            
+            characters = [];
+            gameObjects = []; 
+            zones = [];
+            charIdCounter = 0;
+
+            const globalSeed = cyrb53([...names].sort().join(''));
+            let skillPool = [...SKILLS.filter(s => s.id !== 'none')];
+            
+            names.forEach((name) => {
+                const seedHash = cyrb53(name, globalSeed);
+                const rand = mulberry32(seedHash);
+                
+                if (skillPool.length === 0) skillPool = [...SKILLS.filter(s => s.id !== 'none')];
+                
+                const nameHash = cyrb53(name);
+                const poolIndex = nameHash % skillPool.length;
+                const assignedSkillId = skillPool[poolIndex].id;
+                skillPool.splice(poolIndex, 1);
+                
+                const char = new Character(name, rand, false, null, assignedSkillId);
+                characters.push(char);
+                char.createDOM();
+                char.createListItem();
+            });
+
+            initialTeamCount = names.length;
+            updateAliveCount();
+            return true;
+        }
+
+        ui.startBtn.addEventListener('click', () => {
+            try {
+                if (!prepareGame()) {
+                    alert('戦闘には少なくとも2人の名前が必要です。');
+                    return;
+                }
+
+                timeStopState = { active: false, ownerTeam: null, endTime: 0 };
+                timeSlowState = { active: false, ownerTeam: null, endTime: 0 };
+                globalSpikesActive = false;
+                isSuddenDeath = false;
+                hasFirstDeathOccurred = false;
+                ui.timeStopOverlay.classList.add('hidden');
+
+                gameTime = 0;
+                currentBattlefieldRadius = BATTLEFIELD_SIZE / 2;
+                ui.battlefieldBg.style.width = `${BATTLEFIELD_SIZE}px`;
+                ui.battlefieldBg.style.height = `${BATTLEFIELD_SIZE}px`;
+                
+                ui.battlefield.classList.remove('hidden');
+                ui.startOverlay.classList.add('hidden');
+                ui.gameOverOverlay.classList.add('hidden');
+                ui.editorPanel.classList.add('hidden');
+                ui.pauseBtn.disabled = false;
+                ui.pauseBtn.textContent = '一時停止';
+                ui.stopBtn.classList.remove('hidden');
+                ui.shuffleBtn.disabled = true; 
+                isPlaying = true;
+
+                if (gameLoopId) clearInterval(gameLoopId);
+                gameLoopId = setInterval(gameLoop, TICK_RATE);
+                resizeBattlefield();
+            } catch (e) {
+                console.error("Game Start Error:", e);
+                alert("開始に失敗しました。");
+            }
+        });
+
+        let debounceTimer;
+        ui.nameInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                prepareGame();
+            }, 300);
+        });
+
+        function gameLoop() {
+            if (!isPlaying) return;
+
+            gameTime += TICK_RATE;
+            updateGameTimeDisplay();
+            globalSpikesActive = false; 
+
+            if (gameTime >= 50000 && !isSuddenDeath) {
+                isSuddenDeath = true;
+                createEffect('effect-text text-red-500 font-black', BATTLEFIELD_SIZE/2, BATTLEFIELD_SIZE/2, '💀 サドンデス突入！ 💀<br><span class="text-2xl">攻撃力10倍 / 速度3倍</span>', 3000, 'font-size: 60px; text-align: center; line-height: 1.2; width: 800px;');
+                characters.forEach(c => {
+                    if (c.isAlive && !c.isMinion) {
+                        c.atk *= 10;
+                        c.speed *= 3;
+                        c.normalizeSpeed();
+                    }
+                });
+            }
+
+            characters.forEach(c => {
+                if (c.isAlive && c.skill === 'vampire_lord' && gameTime >= 50000) {
+                    c.takeDamage(999999, true, null, true);
+                }
+            });
+
+            if (timeStopState.active && gameTime > timeStopState.endTime) {
+                timeStopState.active = false; ui.timeStopOverlay.classList.add('hidden');
+            }
+            if (timeSlowState.active && gameTime > timeSlowState.endTime) {
+                timeSlowState.active = false;
+            }
+
+            const aliveTeams = new Set(characters.filter(c => c.isAlive && (!c.isMinion || c.isFragment)).map(c => c.teamId));
+
+            const playerBasedRadius = (BATTLEFIELD_SIZE / 2) * Math.sqrt(Math.max(1, aliveTeams.size) / initialTeamCount);
+            const timeBasedRadius = (BATTLEFIELD_SIZE / 2) * (1 - Math.min(1, gameTime / 50000)) + (MIN_BATTLEFIELD_SIZE / 2);
+            const targetRadius = Math.max(MIN_BATTLEFIELD_SIZE / 2, Math.min(playerBasedRadius, timeBasedRadius));
+
+            if (currentBattlefieldRadius > targetRadius) {
+                currentBattlefieldRadius -= (20 / FPS); 
+                if (currentBattlefieldRadius < targetRadius) currentBattlefieldRadius = targetRadius;
+                const diameter = currentBattlefieldRadius * 2;
+                ui.battlefieldBg.style.width = `${diameter}px`;
+                ui.battlefieldBg.style.height = `${diameter}px`;
+            }
+
+            if (!timeStopState.active) {
+                gameObjects = gameObjects.filter(g => {
+                    if (g.update) {
+                        const res = g.update();
+                        if (res === false) return false;
+                    }
+                    return g.isAlive !== false;
+                });
+                zones = zones.filter(z => z.update());
+            } else {
+                gameObjects = gameObjects.filter(g => {
+                    if(g.owner && g.owner.teamId === timeStopState.ownerTeam && g.update) {
+                        const res = g.update();
+                        if (res === false) return false;
+                    }
+                    return g.isAlive !== false;
+                });
+            }
+
+            for (let i = 0; i < characters.length; i++) characters[i].act();
+
+            for (let i = 0; i < characters.length; i++) {
+                for (let j = i + 1; j < characters.length; j++) {
+                    const c1 = characters[i]; const c2 = characters[j];
+                    if (!c1.isAlive || !c2.isAlive) continue;
+                    if (c1.isUnderground || c2.isUnderground) continue; 
+                    if (c1.flightEndTime > gameTime || c2.flightEndTime > gameTime) continue;
+
+                    const dx = c2.x - c1.x; const dy = c2.y - c1.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = c1.radius + c2.radius;
+
+                    if (dist < minDist && dist > 0) {
+                        const overlap = minDist - dist;
+                        const nx = dx / dist; const ny = dy / dist;
+                        c1.x -= nx * overlap / 2; c1.y -= ny * overlap / 2;
+                        c2.x += nx * overlap / 2; c2.y += ny * overlap / 2;
+
+                        const dvx = c1.vx - c2.vx; const dvy = c1.vy - c2.vy;
+                        const dotProduct = dvx * nx + dvy * ny;
+
+                        if (dotProduct > 0) {
+                            c1.vx -= dotProduct * nx; c1.vy -= dotProduct * ny;
+                            c2.vx += dotProduct * nx; c2.vy += dotProduct * ny;
+
+                            if (c1.teamId !== c2.teamId) {
+                                const c1CanAct = !timeStopState.active || timeStopState.ownerTeam === c1.teamId;
+                                const c2CanAct = !timeStopState.active || timeStopState.ownerTeam === c2.teamId;
+                                if (c1CanAct && c1.stunEndTime <= gameTime) c1.attack(c2);
+                                if (c2CanAct && c2.stunEndTime <= gameTime) c2.attack(c1);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            for (let i = 0; i < characters.length; i++) {
+                characters[i].checkWallCollision();
+                characters[i].updatePosition();
+            }
+            
+            updateListOrder();
+        }
+
+        function updateGameTimeDisplay() {
+            const seconds = Math.floor(gameTime / 1000);
+            const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
+            ui.gameTime.textContent = `${m}:${s}`;
+            if (isSuddenDeath) ui.gameTime.classList.add('text-red-500', 'font-bold');
+            else ui.gameTime.classList.remove('text-red-500', 'font-bold');
+        }
+
+        function updateAliveCount() {
+            const aliveTeams = new Set(characters.filter(c => c.isAlive && (!c.isMinion || c.isFragment)).map(c => c.teamId));
+            ui.aliveCount.textContent = `${aliveTeams.size} / ${initialTeamCount} チーム生存`;
+        }
+
+        function checkWinCondition() {
+            updateAliveCount();
+            
+            const aliveTeams = Array.from(new Set(characters.filter(c => c.isAlive && (!c.isMinion || c.isFragment)).map(c => c.teamId)));
+            
+            if (aliveTeams.length <= 1) {
+                if (aliveTeams.length === 1) {
+                    const winnerId = aliveTeams[0];
+                    let winner = characters.find(c => c.id === winnerId && c.isAlive);
+                    if (!winner) winner = characters.find(c => c.teamId === winnerId && !c.isMinion && c.isAlive);
+                    if (!winner) winner = characters.find(c => c.teamId === winnerId && c.isAlive);
+                    if (!winner) winner = characters.find(c => c.id === winnerId);
+                    finishGame(winner);
+                } else {
+                    finishGame(null);
+                }
+            }
+        }
+
+        function finishGame(winner) {
+            isPlaying = false;
+            clearInterval(gameLoopId);
+            ui.stopBtn.classList.add('hidden'); 
+            
+            setTimeout(() => {
+                ui.gameOverOverlay.classList.remove('hidden');
+                if (winner) {
+                    ui.winnerDisplay.textContent = winner.avatar;
+                    ui.winnerName.textContent = winner.name + ' の勝利！';
+                    if(winner.element) {
+                        winner.element.style.transform = 'translate(-50%, -50%) scale(3)';
+                        winner.element.style.zIndex = '100';
+                    }
+                } else {
+                     ui.winnerDisplay.textContent = '💀';
+                     ui.winnerName.textContent = '相打ち...勝者なし';
+                }
+            }, 1000);
+        }
+
+        let lastSortTime = 0;
+        function updateListOrder() {
+            if (gameTime - lastSortTime < 1000) return;
+            lastSortTime = gameTime;
+
+            const listElements = Array.from(ui.characterList.children);
+            listElements.sort((a, b) => {
+                const charA = characters.find(c => `list_${c.id}` === a.id);
+                const charB = characters.find(c => `list_${c.id}` === b.id);
+                if (!charA || !charB) return 0;
+                
+                if (charA.isAlive !== charB.isAlive) return charA.isAlive ? -1 : 1;
+                return (charB.hp / charB.maxHp) - (charA.hp / charA.maxHp);
+            });
+            listElements.forEach(el => ui.characterList.appendChild(el));
+        }
+
+        function openEditor(char) {
+            let targetChar = char.isMinion ? characters.find(c => c.id === char.teamId) : char;
+            if(!targetChar) return;
+
+            editingCharId = targetChar.id;
+            ui.editAvatar.textContent = targetChar.avatar;
+            ui.editName.textContent = targetChar.name;
+            ui.editAtk.value = Math.floor(targetChar.atk);
+            ui.editMaxHp.value = Math.floor(targetChar.maxHp);
+            ui.editSpd.value = targetChar.speed.toFixed(1);
+            ui.editSkill.value = targetChar.skill;
+            
+            Array.from(ui.characterList.children).forEach(el => el.classList.remove('border-blue-500', 'bg-gray-600'));
+            if(targetChar.listItemElement) targetChar.listItemElement.classList.add('border-blue-500', 'bg-gray-600');
+            ui.editorPanel.classList.remove('hidden');
+        }
+
+        function saveEditor() {
+            if (!editingCharId) return;
+            const char = characters.find(c => c.id === editingCharId);
+            if (!char) return;
+
+            const oldMaxHp = char.maxHp;
+            const oldSkill = char.skill;
+            
+            char.atk = parseFloat(ui.editAtk.value) || 1;
+            let editedMaxHp = parseInt(ui.editMaxHp.value) || 1000;
+            // エディタからの入力も最大値200で制限
+            char.speed = Math.min(parseFloat(ui.editSpd.value) || 1.0, 200);
+            const newSkill = ui.editSkill.value;
+            
+            if (!SUPPORT_SKILLS.includes(oldSkill) && SUPPORT_SKILLS.includes(newSkill)) {
+                editedMaxHp *= 1.5;
+            } else if (SUPPORT_SKILLS.includes(oldSkill) && !SUPPORT_SKILLS.includes(newSkill)) {
+                editedMaxHp /= 1.5;
+            }
+            if (char.skill === 'giant' && newSkill !== 'giant') { char.radius = 16; char.element.style.width = '32px'; char.element.style.height = '32px'; char.element.style.fontSize = '24px'; editedMaxHp /= 2.5; char.atk /= 2.0; char.speed /= 0.8; }
+            if (newSkill === 'giant' && oldSkill !== 'giant') { char.radius = 36; char.element.style.width = '72px'; char.element.style.height = '72px'; char.element.style.fontSize = '54px'; editedMaxHp *= 2.5; char.atk *= 2.0; char.speed *= 0.8; }
+            
+            if (oldSkill === 'super_knockback' && newSkill !== 'super_knockback') char.atk /= 1.5;
+            if (newSkill === 'super_knockback' && oldSkill !== 'super_knockback') char.atk *= 1.5;
+            
+            char.maxHp = editedMaxHp;
+            char.skill = newSkill;
+            char.isFlying = (newSkill === 'flying');
+            char.hasExtraLife = (newSkill === 'extra_life');
+
+            customStats.set(char.name, {
+                atk: char.atk,
+                maxHp: char.maxHp,
+                speed: char.speed,
+                skill: char.skill
+            });
+
+            if (char.maxHp > oldMaxHp) char.hp += (char.maxHp - oldMaxHp);
+            else if (char.hp > char.maxHp) char.hp = char.maxHp;
+
+            char.normalizeSpeed();
+            char.updateUI();
+            ui.editorPanel.classList.add('hidden');
+        }
+
+        ui.restartBtn.addEventListener('click', () => {
+            ui.gameOverOverlay.classList.add('hidden');
+            ui.startOverlay.classList.remove('hidden');
+            ui.shuffleBtn.disabled = false;
+            resizeBattlefield();
+        });
+        ui.pauseBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            ui.pauseBtn.textContent = isPlaying ? '一時停止' : '再開';
+            ui.pauseBtn.className = isPlaying 
+                ? 'px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded shadow'
+                : 'px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded shadow';
+        });
+        ui.stopBtn.addEventListener('click', () => {
+            isPlaying = false;
+            if (gameLoopId) clearInterval(gameLoopId);
+            ui.battlefield.classList.add('hidden');
+            ui.startOverlay.classList.remove('hidden');
+            ui.editorPanel.classList.add('hidden');
+            ui.stopBtn.classList.add('hidden');
+            ui.pauseBtn.disabled = true;
+            ui.shuffleBtn.disabled = false;
+        });
+
+        ui.shuffleBtn.addEventListener('click', () => {
+            const inputText = ui.nameInput.value.trim();
+            if (!inputText) return;
+            let names = inputText.split(/[,\n、]/).map(n => n.trim()).filter(n => n.length > 0);
+            names = [...new Set(names)].slice(0, MAX_PLAYERS);
+            if (names.length < 2) return;
+            
+            let availableSkills = [...SKILLS.filter(s => s.id !== 'none')];
+            
+            names.forEach(name => {
+                const basePool = Math.random();
+                let atk, maxHp, speed;
+                if (basePool < 0.33) { atk = 15 + Math.random() * 10; maxHp = 1000 + Math.random() * 200; speed = 4.5 + Math.random() * 1.5; }
+                else if (basePool < 0.66) { atk = 8 + Math.random() * 10; maxHp = 1200 + Math.random() * 300; speed = 4.0 + Math.random() * 1.0; }
+                else { atk = 10 + Math.random() * 8; maxHp = 1000 + Math.random() * 150; speed = 5.5 + Math.random() * 1.5; }
+                
+                if(availableSkills.length === 0) availableSkills = [...SKILLS.filter(s => s.id !== 'none')];
+                const idx = Math.floor(Math.random() * availableSkills.length);
+                const skill = availableSkills[idx].id;
+                availableSkills.splice(idx, 1);
+
+                let finalMaxHp = maxHp;
+                if (skill === 'giant') { finalMaxHp *= 2.5; atk *= 2.0; speed *= 0.8; }
+                if (skill === 'super_knockback') { atk *= 1.5; }
+                if (SUPPORT_SKILLS.includes(skill)) { finalMaxHp *= 1.5; }
+                if (skill === 'extra_life') { finalMaxHp *= 0.8; }
+                
+                customStats.set(name, { atk: atk, maxHp: finalMaxHp, speed: speed, skill: skill });
+            });
+            
+            prepareGame();
+            
+            characters.forEach(c => {
+                if(!c.isMinion) createEffect('effect-text text-purple-400 font-bold', c.x, c.y, 'SHUFFLE!', 1000);
+            });
+        });
+
+        ui.closeEditorBtn.addEventListener('click', () => {
+            ui.editorPanel.classList.add('hidden');
+            Array.from(ui.characterList.children).forEach(el => el.classList.remove('border-blue-500', 'bg-gray-600'));
+        });
+        ui.saveEditBtn.addEventListener('click', saveEditor);
+
+        window.onload = () => {
+            ui.nameInput.value = "勇者, 魔王, ドラゴン, スライム, 魔法使い, アサシン, 忍者, 狂戦士, ゴーレム, 妖精, 吸血鬼, ゾンビ, 剣士, 弓兵, 僧侶, 盗賊, 召喚士, 竜騎士, 暗黒騎士, 聖騎士";
+            prepareGame();
+            resizeBattlefield();
+        };
+
+    </script>
+</body>
+</html>
