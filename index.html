@@ -407,6 +407,8 @@
         const STORAGE_KEY = 'auto-battler-settings-v1';
         const SAMPLE_NAMES = '勇者, 魔王, ドラゴン, スライム, 魔法使い, アサシン, 忍者, 狂戦士, ゴーレム, 妖精, 吸血鬼, ゾンビ, 剣士, 弓兵, 僧侶, 盗賊, 召喚士, 竜騎士, 暗黒騎士, 聖騎士';
         let simulationTimers = new Set();
+        const visualEffects = new Map();
+        const MAX_VISUAL_EFFECTS = 400;
         let resultTimer = null;
         let playbackSpeed = 1;
         let frameTime = null;
@@ -539,6 +541,41 @@
             return Math.sqrt(dx * dx + dy * dy);
         }
 
+        // Cosmetic lifetimes follow simulated time, including accelerated playback.
+        // Keep these separate from combat timers so time stop cannot delay cleanup.
+        function trackVisualEffect(el, duration) {
+            if (duration <= 0) return; // Persistent objects manage their own lifetime.
+            while (visualEffects.size >= MAX_VISUAL_EFFECTS) {
+                const oldest = visualEffects.keys().next().value;
+                oldest.remove();
+                visualEffects.delete(oldest);
+            }
+            visualEffects.set(el, gameTime + duration);
+        }
+
+        function expireVisualEffects() {
+            for (const [el, expiresAt] of visualEffects) {
+                if (gameTime + 1e-7 >= expiresAt || el.isConnected === false) {
+                    el.remove();
+                    visualEffects.delete(el);
+                }
+            }
+        }
+
+        function clearBattleVisuals() {
+            for (const el of visualEffects.keys()) el.remove();
+            visualEffects.clear();
+            for (const object of [...gameObjects, ...zones]) {
+                for (const key of ['el', 'el1', 'el2']) {
+                    if (object[key]) object[key].remove();
+                }
+            }
+            for (const character of characters) {
+                if (!character.isAlive && character.element) character.element.remove();
+            }
+            ui.timeStopOverlay.classList.add('hidden');
+        }
+
         function showFloatingText(x, y, text, className) {
             const el = document.createElement('div');
             el.className = `damage-text ${className}`;
@@ -546,7 +583,7 @@
             el.style.left = `${x}px`;
             el.style.top = `${y}px`;
             ui.battlefield.appendChild(el);
-            setTimeout(() => el.remove(), 1000);
+            trackVisualEffect(el, 1000);
         }
 
         function createEffect(className, x, y, innerHTML, duration = 500, style = '') {
@@ -557,7 +594,7 @@
             el.style.top = `${y}px`;
             if(style) el.style.cssText += style;
             ui.battlefield.appendChild(el);
-            if(duration > 0) setTimeout(() => el.remove(), duration);
+            trackVisualEffect(el, duration);
             return el;
         }
 
@@ -1818,6 +1855,7 @@
             clearTimeout(debounceTimer);
             clearTimeout(resultTimer);
             simulationTimers.clear();
+            clearBattleVisuals();
             lastSortTime = 0;
 
             ui.battlefield.innerHTML = `
@@ -1913,6 +1951,7 @@
             if (!isPlaying) return;
 
             gameTime += TICK_RATE;
+            expireVisualEffects();
             runSimulationTimers();
             for (const c of [...characters]) {
                 if (c.isAlive && c.skill !== 'nullify' && c.acidEndTime >= gameTime && c.acidNextTick <= gameTime && (!timeStopState.active || c.teamId === timeStopState.ownerTeam)) {
@@ -2064,6 +2103,7 @@
             isPlaying = false;
             stopLoop();
             simulationTimers.clear();
+            clearBattleVisuals();
             ui.pauseBtn.disabled = true;
             ui.editorPanel.classList.add('hidden');
             ui.stopBtn.classList.add('hidden'); 
@@ -2210,6 +2250,7 @@
             stopLoop();
             clearTimeout(resultTimer);
             simulationTimers.clear();
+            clearBattleVisuals();
             clearTimeout(debounceTimer);
             ui.timeStopOverlay.classList.add('hidden');
             ui.battlefield.classList.add('hidden');
