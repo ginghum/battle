@@ -344,17 +344,17 @@
             { id: 'pitfall', name: '落とし穴作成', color: 'text-amber-700', desc: '踏むと止まる罠を設置。落ちると自身回復' },
             { id: 'magnet_repel', name: '磁力弾き', color: 'text-pink-300', desc: '3秒ごとに半径175の敵を弾く。0.6秒の強制ノックバック＆攻撃力1.2倍ダメージ' },
             { id: 'triumph', name: '倒すと強化', color: 'text-yellow-600', desc: '敵を倒すと一部回復＆攻撃力微増' },
-            { id: 'time_stop', name: '時間停止', color: 'text-fuchsia-500', desc: '定期的に数秒間、自分以外を停止(停止中能力150倍)' },
+            { id: 'time_stop', name: '時間停止', color: 'text-fuchsia-500', desc: '17秒ごとに2.2秒間、自分以外を停止。停止中は接触攻撃60倍・速度3倍' },
             { id: 'nullify', name: '能力無効', color: 'text-gray-500', desc: '全魔法/武器/状態異常無効＆無敵を即死させる' },
             { id: 'defense_x2', name: '防御力2倍', color: 'text-blue-500', desc: '受けるダメージを半減する' },
-            { id: 'underground', name: '地中移動', color: 'text-amber-900', desc: '定期的に地中に潜り無敵化、出現時ダメージ' },
+            { id: 'underground', name: '地中移動', color: 'text-amber-900', desc: '7.5秒ごとに3.2秒間地中に潜り無敵化、出現時ダメージ' },
             { id: 'extra_life', name: '残機×2', color: 'text-pink-500', desc: 'HP0で復活。ただし最大HPにデバフ' },
             { id: 'gatling', name: 'ガトリングガン', color: 'text-gray-400', desc: '定期的に前方に弾を連射する' },
             { id: 'water_push', name: '水流押し流し', color: 'text-blue-300', desc: '3.5秒ごとに半径190へ水流。攻撃力2.5倍・吹き飛ばし・1秒遅化。命中で回復' },
             { id: 'bomb_throw', name: '爆弾投げ', color: 'text-red-600', desc: '敵の足元に数秒後爆発する爆弾を投げる' },
             { id: 'acid_spray', name: '酸噴射', color: 'text-green-500', desc: '2.5秒ごとに近くの敵へ酸を噴射。初撃5倍＋4秒間の腐食ダメージ' },
             { id: 'seven_attacks', name: '七回攻撃', color: 'text-yellow-600', desc: '攻撃時に7回ダメージ。7回攻撃する度HP77回復' },
-            { id: 'wall_create', name: '壁生成', color: 'text-stone-500', desc: '10秒ごとにHP30%のバリアを追加（上限60%）。3チーム以上では周囲に壁も生成' },
+            { id: 'wall_create', name: '壁生成', color: 'text-stone-500', desc: '12秒ごとにHP12%のバリアを追加（上限25%）。3チーム以上では2秒の壁も生成' },
             { id: 'spinning_blade', name: '回転刃', color: 'text-gray-200', desc: '常に周囲にダメージ判定を纏う' },
             { id: 'giant_punch', name: '巨大パンチ', color: 'text-orange-600', desc: '前方の敵に大ダメージと超絶ノックバック' },
             { id: 'split_on_death', name: '死亡時分裂', color: 'text-purple-300', desc: '死亡時に小さな分身を複数生み出す' },
@@ -363,7 +363,7 @@
             { id: 'expand_domain', name: '盤面拡大', color: 'text-emerald-300', desc: '一度だけ盤面の縮小を初期サイズに戻す(全回復)' },
             { id: 'homing_laser', name: 'ホーミング光線', color: 'text-cyan-400', desc: '1.6秒ごとに攻撃力8倍の追尾光線。無敵の敵を避けて狙い、標的消失時は再追尾。有効命中で回復強化' },
             { id: 'jet_dash', name: 'ジェット突進', color: 'text-red-400', desc: '3.5秒ごとに0.9秒突進。速度3倍・接触攻撃4倍・被ダメージ30%軽減・命中でHP1%回復' },
-            { id: 'bike_ride', name: 'バイク搭乗', color: 'text-zinc-400', desc: '専用HPを持つバイクに乗る(速度UP)' },
+            { id: 'bike_ride', name: 'バイク搭乗', color: 'text-zinc-400', desc: '最大HP80%の耐久を持つバイクに乗る。搭乗中は速度1.3倍、破壊されると通常速度' },
             { id: 'chain_bind', name: '拘束の鎖', color: 'text-stone-400', desc: '近くの敵を一定時間移動不可にする(被ダメ10倍)' },
             { id: 'death_stare', name: '死の眼差し', color: 'text-purple-900', desc: '自分の近くに2秒居続けた敵を即死させる' },
             { id: 'vampire_lord', name: '吸血鬼化', color: 'text-rose-700', desc: 'HP半減時、永続的に全強化＆超吸収' },
@@ -372,11 +372,11 @@
             { id: 'warp_gate', name: 'ワープゲート', color: 'text-fuchsia-400', desc: '空間を繋ぐゲートを設置(敵が通ると弱体化)' },
             { id: 'emoji_launcher', name: '絵文字ランチャー', color: 'text-yellow-400', desc: '定期的に高火力の顔文字を連射。壁に当たると消滅' },
             { id: 'final_five_invincible', name: '終盤無敵', color: 'text-yellow-100', desc: '残り5チームになると完全無敵になる' },
-            { id: 'border_spikes', name: '外周棘生成', color: 'text-red-800', desc: '外周で敵に攻撃力2倍のダメージ。敵のHPを削ると最大HPの1%回復' },
-            { id: 'accelerate_on_bounce', name: '反発加速', color: 'text-lime-400', desc: '壁や敵にぶつかる度に速度が上昇＆回復' },
+            { id: 'border_spikes', name: '外周棘生成', color: 'text-red-800', desc: '外周で敵に攻撃力1.6倍のダメージ。有効命中でHP0.75%回復（回復間隔0.5秒）' },
+            { id: 'accelerate_on_bounce', name: '反発加速', color: 'text-lime-400', desc: '外周で反射するたび速度+0.45（成長上限80）＆HP8回復。発動間隔0.075秒' },
             { id: 'team_haste', name: '全体加速', color: 'text-cyan-200', desc: '定期的に自分と味方の速度を上げ、無敵を付与' },
             { id: 'invincible_until_first_death', name: '最初の一人が死ぬまで無敵', color: 'text-slate-300', desc: '誰かが脱落するまで無敵だが全能力半減' },
-            { id: 'wizard_mode', name: '魔法使い化', color: 'text-violet-500', desc: '定期的にランダムな魔法を連射する状態になる' }
+            { id: 'wizard_mode', name: '魔法使い化', color: 'text-violet-500', desc: '15秒ごとに5秒間、ランダム魔法を連射（魔法間隔45%、威力85%、命中回復は0.2秒に1回）' }
         ];
 
         const SUPPORT_SKILLS = [
@@ -626,9 +626,9 @@
                 } else if (this.skill === 'extra_life') {
                     this.hasExtraLife = true;
                 } else if (this.skill === 'bike_ride') {
-                    this.bikeHp = this.maxHp * 1.5;
+                    this.bikeHp = this.maxHp * 0.8;
                     this.avatar = '🏍️';
-                    this.speed *= 1.5;
+                    this.speed *= 1.3;
                 }
 
                 if (!isMinion && customStats.has(this.name)) {
@@ -638,7 +638,8 @@
                     this.speed = saved.speed;
                     this.skill = saved.skill;
                 }
-                if (this.skill === 'bike_ride') this.bikeHp = this.maxHp * 1.5;
+                this.bikeSpeedActive = this.skill === 'bike_ride';
+                if (this.bikeSpeedActive) this.bikeHp = this.maxHp * 0.8;
                 this.hp = this.maxHp;
                 this.shield = this.skill === 'shield' ? this.maxHp * 0.5 : 0;
                 this.maxShield = this.shield;
@@ -763,7 +764,7 @@
                 else if (hpPercent < 60) this.hpBarElement.classList.add('med');
 
                 if (this.bikeHp > 0) {
-                    this.shieldBarElement.style.width = `${(this.bikeHp / (this.maxHp * 1.5)) * 100}%`;
+                    this.shieldBarElement.style.width = `${(this.bikeHp / (this.maxHp * 0.8)) * 100}%`;
                 } else if (this.maxShield > 0) {
                     this.shieldBarElement.style.width = `${Math.max(0, (this.shield / this.maxShield) * 100)}%`;
                 } else {
@@ -858,8 +859,16 @@
                 if (this.chainBindEndTime > gameTime) amount *= 10.0; 
 
                 if (this.bikeHp > 0) {
-                    if (this.bikeHp >= amount) { this.bikeHp -= amount; amount = 0; }
-                    else { amount -= this.bikeHp; this.bikeHp = 0; this.avatar = '👤'; createEffect('effect-text', this.x, this.y, '💥', 500); }
+                    const absorbed = Math.min(this.bikeHp, amount);
+                    this.bikeHp -= absorbed;
+                    amount -= absorbed;
+                    if (this.bikeHp <= 0) {
+                        if (this.bikeSpeedActive) this.speed /= 1.3;
+                        this.bikeSpeedActive = false;
+                        this.normalizeSpeed();
+                        this.avatar = '👤';
+                        createEffect('effect-text', this.x, this.y, '💥', 500);
+                    }
                 } else if (this.shield > 0) {
                     if (this.shield >= amount) { this.shield -= amount; amount = 0; }
                     else { amount -= this.shield; this.shield = 0; }
@@ -910,11 +919,21 @@
                 this.updateUI();
             }
             
+            spellAttackPower() {
+                return this.atk * (this.skill === 'wizard_mode' ? 0.85 : 1);
+            }
+
             triggerWeaponHeal() {
-                if (this.isAlive) {
+                if (!this.isAlive) return;
+                if (this.skill === 'wizard_mode') {
+                    if (gameTime < (this.nextWizardHealTime || 0)) return;
+                    this.nextWizardHealTime = gameTime + 200;
+                    this.heal(this.maxHp * 0.01);
+                } else {
                     this.heal(this.maxHp * 0.01);
                 }
             }
+            
 
             die(attacker) {
                 this.isAlive = false;
@@ -985,7 +1004,7 @@
 
                 if (this.skill === 'summon_knight' && this.knightRef && this.knightRef.isAlive) targetSpeed = 1.0;
                 
-                if (timeStopState.active && timeStopState.ownerTeam === this.teamId) targetSpeed *= 5.0;
+                if (timeStopState.active && timeStopState.ownerTeam === this.teamId) targetSpeed *= 3.0;
 
                 // 速度の最大値を200に制限
                 targetSpeed = Math.min(targetSpeed, 200);
@@ -1002,7 +1021,7 @@
 
             checkCooldown(skillKey, interval) {
                 if (!this.lastSkills[skillKey]) this.lastSkills[skillKey] = 0;
-                const adjustedInterval = (this.wizardEndTime > gameTime) ? interval * 0.2 : interval;
+                const adjustedInterval = (this.wizardEndTime > gameTime) ? interval * 0.45 : interval;
                 if (gameTime - this.lastSkills[skillKey] > adjustedInterval) {
                     this.lastSkills[skillKey] = gameTime;
                     return true;
@@ -1043,13 +1062,15 @@
                 
                 const isNullified = (this.nullifyEndTime > gameTime && this.skill !== 'nullify');
                 let activeSkill = this.skill;
-                const isWizardMagic = (this.skill === 'wizard_mode' && activeSkill !== 'wizard_mode');
+
 
                 if (this.wizardEndTime > gameTime) {
                     // 追加能力を含める場合もあるが基本魔法に限定
                     const magicSkills = ['ranged_shot', 'random_lightning', 'flamethrower', 'rainbow_beam', 'tornado', 'freeze_aura', 'emoji_launcher'];
                     activeSkill = magicSkills[Math.floor(Math.random() * magicSkills.length)];
                 }
+
+                const isWizardMagic = this.skill === 'wizard_mode' && activeSkill !== 'wizard_mode';
 
                 if (!isNullified) {
                     if (activeSkill === 'scaling_atk') this.atk += 0.12; 
@@ -1104,7 +1125,7 @@
                         const target = this.getNearestEnemy();
                         if (target) {
                             const angle = Math.atan2(target.y - this.y, target.x - this.x);
-                            gameObjects.push(new Projectile(this, angle, 'text-gray-300', '●', 10, this.atk * 2.4, true));
+                            gameObjects.push(new Projectile(this, angle, 'text-gray-300', '●', 10, this.spellAttackPower() * 2.4, true));
                         }
                     }
 
@@ -1113,7 +1134,7 @@
                         if (target) {
                             const angle = Math.atan2(target.y - this.y, target.x - this.x);
                             const face = EMOJI_FACES[Math.floor(Math.random() * EMOJI_FACES.length)];
-                            gameObjects.push(new Projectile(this, angle, 'text-yellow-400 font-bold', face, 12, this.atk * 8.0, true));
+                            gameObjects.push(new Projectile(this, angle, 'text-yellow-400 font-bold', face, 12, this.spellAttackPower() * 8.0, true));
                         }
                     }
 
@@ -1136,8 +1157,8 @@
                         zones.push(new Zone(this.x, this.y, 30, 'bg-black opacity-80', 'pitfall', this.teamId, 10000, this.atk, this));
                     }
                     
-                    if (activeSkill === 'wall_create' && this.checkCooldown('wall', 10000)) {
-                        this.shield = Math.min(this.maxHp * 0.6, this.shield + this.maxHp * 0.3);
+                    if (activeSkill === 'wall_create' && this.checkCooldown('wall', 12000)) {
+                        this.shield = Math.min(this.maxHp * 0.25, this.shield + this.maxHp * 0.12);
                         this.maxShield = Math.max(this.maxShield, this.shield);
                         this.updateUI();
                         showFloatingText(this.x, this.y, 'BARRIER!', 'text-stone-300');
@@ -1145,7 +1166,7 @@
                         if (aliveTeamsForWall > 2) {
                             for(let i=0; i<8; i++) {
                                 const a = (Math.PI / 4) * i;
-                                zones.push(new WallZone(this.x + Math.cos(a)*80, this.y + Math.sin(a)*80, 26, this.teamId, 4500));
+                                zones.push(new WallZone(this.x + Math.cos(a)*80, this.y + Math.sin(a)*80, 26, this.teamId, 2000));
                             }
                         }
                     }
@@ -1158,7 +1179,7 @@
                         createEffect('effect-text text-indigo-400', this.x, this.y, '💨', 300);
                     }
 
-                    if (activeSkill === 'underground' && this.checkCooldown('under', 7000)) {
+                    if (activeSkill === 'underground' && this.checkCooldown('under', 7500)) {
                         this.isUnderground = true;
                         createEffect('effect-text text-amber-900', this.x, this.y, '🕳️', 500);
                         scheduleTimeout(() => {
@@ -1168,14 +1189,14 @@
                             this.updatePosition();
                             createEffect('effect-text text-amber-900', this.x, this.y, '💥', 500, 'font-size:40px;');
                             characters.forEach(c => { if(c.isAlive && c.teamId !== this.teamId && getDistance(this, c)<80) c.takeDamage(this.atk*2, false, this); });
-                        }, 4000, this);
+                        }, 3200, this);
                     }
 
                     if (activeSkill === 'random_lightning' && this.checkCooldown('lightning', 2000)) {
                         const target = this.getNearestEnemy();
                         if (target && target.skill !== 'nullify') {
                             createEffect('effect-text text-yellow-300', target.x, target.y - 20, '⚡', 500, 'font-size: 40px;');
-                            target.takeDamage(this.atk * 4.5, false, this);
+                            target.takeDamage(this.spellAttackPower() * 4.5, false, this);
                             this.triggerWeaponHeal();
                         }
                     }
@@ -1188,7 +1209,7 @@
                                 let diff = Math.abs(Math.atan2(c.y - this.y, c.x - this.x) - angle);
                                 if (diff > Math.PI) diff = Math.PI * 2 - diff;
                                 if (diff < Math.PI / 4) {
-                                    c.takeDamage(this.atk * 6.0, false, this);
+                                    c.takeDamage(this.spellAttackPower() * 6.0, false, this);
                                     this.triggerWeaponHeal();
                                 }
                             }
@@ -1260,7 +1281,7 @@
                                     let diff = Math.abs(Math.atan2(c.y - this.y, c.x - this.x) - angle);
                                     if (diff > Math.PI) diff = Math.PI * 2 - diff;
                                     if (diff < 0.1) {
-                                        c.takeDamage(this.atk * 9.0, true, this);
+                                        c.takeDamage(this.spellAttackPower() * 9.0, true, this);
                                         this.triggerWeaponHeal();
                                     }
                                 }
@@ -1333,7 +1354,7 @@
 
                     if (activeSkill === 'tornado' && this.checkCooldown('tornado', 4500)) {
                         const life = isWizardMagic ? 150 : 400; 
-                        gameObjects.push(new Tornado(this.x, this.y, this.teamId, this.atk * 1.5, life));
+                        gameObjects.push(new Tornado(this.x, this.y, this.teamId, this.spellAttackPower() * 1.5, life));
                     }
                     
                     if (activeSkill === 'bomb_throw' && this.checkCooldown('bomb', 3500)) {
@@ -1374,8 +1395,8 @@
                         }
                     }
 
-                    if (activeSkill === 'time_stop' && this.checkCooldown('timestop', 15000)) {
-                        timeStopState = { active: true, ownerTeam: this.teamId, endTime: gameTime + 3000 };
+                    if (activeSkill === 'time_stop' && this.checkCooldown('timestop', 17000)) {
+                        timeStopState = { active: true, ownerTeam: this.teamId, endTime: gameTime + 2200 };
                         ui.timeStopOverlay.classList.remove('hidden');
 
                     }
@@ -1470,9 +1491,10 @@
                     if (dot > 0) { 
                         this.vx -= 2 * dot * nx; this.vy -= 2 * dot * ny;
                         
-                        if (this.skill === 'accelerate_on_bounce') { 
-                            this.speed += 0.5; 
-                            this.heal(10);
+                        if (this.skill === 'accelerate_on_bounce' && gameTime >= (this.nextBounceBoostTime || 0)) {
+                            if (this.speed < 80) this.speed = Math.min(80, this.speed + 0.45);
+                            this.heal(8);
+                            this.nextBounceBoostTime = gameTime + 75;
                         }
                         this.normalizeSpeed();
                         
@@ -1482,8 +1504,11 @@
                                 this.lastSpikeDamageTime = gameTime;
                                 for (const owner of spikeOwners) {
                                     const hpBefore = this.hp;
-                                    this.takeDamage(owner.atk * 2, false, owner);
-                                    if (this.hp < hpBefore) owner.heal(owner.maxHp * 0.01);
+                                    this.takeDamage(owner.atk * 1.6, false, owner);
+                                    if (this.hp < hpBefore && gameTime >= (owner.nextSpikeHealTime || 0)) {
+                                        owner.heal(owner.maxHp * 0.0075);
+                                        owner.nextSpikeHealTime = gameTime + 500;
+                                    }
                                     if (!this.isAlive) break;
                                 }
                             }
@@ -1502,7 +1527,7 @@
                 }
                 
                 if (timeStopState.active && timeStopState.ownerTeam === this.teamId) {
-                    damage *= 150.0;
+                    damage *= 60.0;
                 }
 
                 if (this.skill === 'nullify' && target.isInvincibleState()) {
@@ -2128,13 +2153,14 @@
             char.skill = newSkill;
             if (oldSkill === 'extra_life' && newSkill !== 'extra_life') char.maxHp /= 0.8;
             if (newSkill === 'extra_life' && oldSkill !== 'extra_life') char.maxHp *= 0.8;
-            if (oldSkill === 'bike_ride' && newSkill !== 'bike_ride') char.speed /= 1.5;
-            if (newSkill === 'bike_ride' && oldSkill !== 'bike_ride') char.speed *= 1.5;
+            if (oldSkill === 'bike_ride' && newSkill !== 'bike_ride' && char.bikeSpeedActive) char.speed /= 1.3;
+            if (newSkill === 'bike_ride' && oldSkill !== 'bike_ride') char.speed *= 1.3;
             char.speed = Math.min(char.speed, 200);
             if (newSkill !== oldSkill) {
                 char.shield = newSkill === 'shield' ? char.maxHp * 0.5 : 0;
                 char.maxShield = char.shield;
-                char.bikeHp = newSkill === 'bike_ride' ? char.maxHp * 1.5 : 0;
+                char.bikeHp = newSkill === 'bike_ride' ? char.maxHp * 0.8 : 0;
+                char.bikeSpeedActive = newSkill === 'bike_ride';
                 char.avatar = newSkill === 'bike_ride' ? '🏍️' : AVATARS[Math.floor(mulberry32(cyrb53(char.name, cyrb53(JSON.stringify(parseNames(ui.nameInput.value).sort()))))() * AVATARS.length)];
                 char.isUnderground = false;
                 char.isInvincible = false;
@@ -2275,6 +2301,7 @@
     </script>
 </body>
 </html>
+
 
 
 
