@@ -178,6 +178,24 @@
         ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #718096; }
         .hidden { display: none !important; }
+        #game-container { min-width: 0; }
+        #sidebar { flex-shrink: 0; }
+        #start-overlay { padding: 20px; overflow-y: auto; }
+        #name-input { width: min(500px, 100%); }
+        #input-status { min-height: 24px; margin-bottom: 12px; color: #93c5fd; text-align: center; }
+        #start-btn:disabled { opacity: .45; cursor: not-allowed; }
+        .setup-actions { display: flex; gap: 12px; margin: 12px 0; }
+        .setup-actions button { padding: 8px 12px; border: 1px solid #64748b; border-radius: 6px; }
+        #speed-select { background: #374151; border-radius: 5px; padding: 6px; }
+        @media (max-width: 760px) {
+            body { flex-direction: column; height: 100dvh; }
+            #game-container { flex: 1; min-height: 0; }
+            #sidebar { width: 100%; height: 36dvh; border-left: 0; border-top: 1px solid #4a5568; }
+            #start-overlay h1 { font-size: 24px; }
+            #start-overlay p { margin-bottom: 12px; font-size: 12px; }
+            #name-input { height: 90px; flex-shrink: 0; }
+            #editor-panel { position: absolute; bottom: 0; width: 100%; height: 280px; z-index: 70; }
+        }
     </style>
 </head>
 <body class="text-sm">
@@ -187,11 +205,16 @@
         <div id="start-overlay" class="absolute inset-0 bg-gray-900 bg-opacity-90 flex flex-col justify-center items-center z-50">
             <h1 class="text-4xl font-bold mb-4 text-white">オートバトラー<span class="text-yellow-400 text-xl ml-2">超絶進化版</span></h1>
             <p class="mb-6 text-gray-400 max-w-xl text-center leading-relaxed">
-                最大60人までの名前をカンマ(,)区切りで入力してください。<br>
+                2〜60人の名前をカンマ・読点・改行で入力してください。<br>
                 名前を元に<strong>多彩なスキル</strong>を持つキャラクターが生成され、最後まで戦います。<br>
                 <span class="text-red-400 font-bold">※50秒経過でサドンデスモード(攻撃力10倍/速度3倍)に突入します</span>
             </p>
             <textarea id="name-input" class="w-[500px] h-40 p-4 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:border-blue-500 mb-4 resize-none" placeholder="例: 勇者, 魔王, ドラゴン..."></textarea>
+            <div id="input-status" role="status" aria-live="polite"></div>
+            <div class="setup-actions">
+                <button id="sample-btn" type="button">サンプルを入れる</button>
+                <button id="reset-stats-btn" type="button">編集した能力をリセット</button>
+            </div>
             <button id="start-btn" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg transition-transform transform hover:scale-105">
                 バトル開始
             </button>
@@ -267,6 +290,7 @@
                 <button id="shuffle-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded shadow disabled:opacity-50">能力シャッフル</button>
                 <button id="stop-btn" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded shadow hidden">中断</button>
             </div>
+             <label>再生速度 <select id="speed-select" aria-label="再生速度"><option value="0.5">0.5倍</option><option value="1" selected>1倍</option><option value="2">2倍</option><option value="4">4倍</option></select></label>
              <div class="text-sm font-mono text-gray-400">
                  ⏱ <span id="game-time" class="text-lg">00:00</span>
              </div>
@@ -380,6 +404,75 @@
         let hasFirstDeathOccurred = false; 
         
         const customStats = new Map();
+        const STORAGE_KEY = 'auto-battler-settings-v1';
+        const SAMPLE_NAMES = '勇者, 魔王, ドラゴン, スライム, 魔法使い, アサシン, 忍者, 狂戦士, ゴーレム, 妖精, 吸血鬼, ゾンビ, 剣士, 弓兵, 僧侶, 盗賊, 召喚士, 竜騎士, 暗黒騎士, 聖騎士';
+        let simulationTimers = new Set();
+        let resultTimer = null;
+        let playbackSpeed = 1;
+        let frameTime = null;
+        let accumulatedTime = 0;
+
+        function escapeHTML(value) {
+            return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
+        }
+        function parseNames(value) {
+            return [...new Set(value.split(/[,，\n、]/).map(n => n.trim()).filter(Boolean))];
+        }
+        function saveSettings() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify({names: ui.nameInput.value, stats: [...customStats]})); }
+            catch (error) { console.warn('設定を保存できませんでした', error); }
+        }
+        function updateInputStatus() {
+            const count = parseNames(ui.nameInput.value).length;
+            ui.startBtn.disabled = count < 2 || count > MAX_PLAYERS;
+            document.getElementById('input-status').textContent = count > MAX_PLAYERS
+                ? `${count}人入力されています。60人以下にしてください。`
+                : `${count} / ${MAX_PLAYERS}人${count < 2 ? ' — 2人以上入力してください' : ' — 準備完了（同名は1人として扱います）'}`;
+        }
+        function scheduleTimeout(callback, delay, owner = null) {
+            const timer = {callback, remaining: delay, interval: 0, owner};
+            simulationTimers.add(timer);
+            return timer;
+        }
+        function scheduleInterval(callback, delay, owner = null) {
+            const timer = {callback, remaining: delay, interval: delay, owner};
+            simulationTimers.add(timer);
+            return timer;
+        }
+        function runSimulationTimers() {
+            for (const timer of [...simulationTimers]) {
+                if (!isPlaying) break;
+                if (!simulationTimers.has(timer)) continue;
+                if (timer.owner && timeStopState.active && timer.owner.teamId !== timeStopState.ownerTeam) continue;
+                timer.remaining -= TICK_RATE;
+                if (timer.remaining > 1e-7) continue;
+                if (timer.interval) timer.remaining += timer.interval;
+                else simulationTimers.delete(timer);
+                timer.callback();
+            }
+        }
+        function stopLoop() {
+            cancelAnimationFrame(gameLoopId);
+            gameLoopId = null;
+            frameTime = null;
+            accumulatedTime = 0;
+        }
+        function animationFrame(timestamp) {
+            if (!isPlaying) { stopLoop(); return; }
+            if (frameTime === null) frameTime = timestamp;
+            accumulatedTime += Math.min(100, timestamp - frameTime) * playbackSpeed;
+            frameTime = timestamp;
+            let steps = 0;
+            while (accumulatedTime + 1e-7 >= TICK_RATE && isPlaying && steps++ < 24) {
+                accumulatedTime -= TICK_RATE;
+                gameLoop();
+            }
+            if (isPlaying) gameLoopId = requestAnimationFrame(animationFrame);
+        }
+        function startLoop() {
+            stopLoop();
+            gameLoopId = requestAnimationFrame(animationFrame);
+        }
 
         const ui = {
             startOverlay: document.getElementById('start-overlay'),
@@ -514,15 +607,11 @@
                 }
 
                 if (!isMinion && customStats.has(this.name)) {
-                    const saved = customStats.get(this.name);
-                    this.atk = saved.atk;
-                    this.maxHp = saved.maxHp;
-                    this.speed = saved.speed;
-                    this.skill = saved.skill;
+                    this.skill = customStats.get(this.name).skill;
                 }
 
                 this.radius = 16;
-                this.isFlying = false;
+                this.isFlying = this.skill === 'flying';
                 this.hasExtraLife = false;
                 this.bikeHp = 0;
                 this.knightRef = null;
@@ -539,6 +628,14 @@
                     this.speed *= 1.5;
                 }
 
+                if (!isMinion && customStats.has(this.name)) {
+                    const saved = customStats.get(this.name);
+                    this.atk = saved.atk;
+                    this.maxHp = saved.maxHp;
+                    this.speed = saved.speed;
+                    this.skill = saved.skill;
+                }
+                if (this.skill === 'bike_ride') this.bikeHp = this.maxHp * 1.5;
                 this.hp = this.maxHp;
                 this.shield = this.skill === 'shield' ? this.maxHp * 0.5 : 0;
                 this.maxShield = this.shield;
@@ -579,6 +676,7 @@
                 this.hpBarElement = null;
                 this.shieldBarElement = null;
                 this.listItemElement = null;
+                this.lastListUpdate = -Infinity;
             }
 
             createDOM() {
@@ -591,7 +689,7 @@
                 
                 el.innerHTML = `
                     ${this.avatar}
-                    <div class="char-name-label">${this.name}</div>
+                    <div class="char-name-label">${escapeHTML(this.name)}</div>
                     <div class="hp-bar-container">
                         <div class="hp-bar-wrap">
                             <div class="hp-bar" style="width: 100%"></div>
@@ -626,7 +724,7 @@
                 li.innerHTML = `
                     <div class="text-2xl mr-3">${this.avatar}</div>
                     <div class="flex-1 min-w-0">
-                        <div class="font-bold text-white truncate">${this.name}</div>
+                        <div class="font-bold text-white truncate">${escapeHTML(this.name)}</div>
                         <div class="text-xs text-gray-400 flex justify-between mt-1">
                             <span>❤️ ${Math.ceil(this.hp)}</span>
                             <span>⚔️ ${Math.ceil(this.atk)}</span>
@@ -656,9 +754,12 @@
                     this.shieldBarElement.style.width = `${(this.bikeHp / (this.maxHp * 1.5)) * 100}%`;
                 } else if (this.maxShield > 0) {
                     this.shieldBarElement.style.width = `${Math.max(0, (this.shield / this.maxShield) * 100)}%`;
+                } else {
+                    this.shieldBarElement.style.width = '0%';
                 }
 
-                if(this.listItemElement && !this.isMinion) {
+                if(this.listItemElement && !this.isMinion && gameTime - this.lastListUpdate >= 200) {
+                    this.lastListUpdate = gameTime;
                     const skillObj = SKILLS.find(s => s.id === this.skill);
                     this.updateListItemHTML(this.listItemElement, skillObj);
                 }
@@ -717,7 +818,7 @@
                 if (this.skill === 'invincible_chance' && Math.random() < 0.05 && !isPiercing) {
                     this.isInvincible = true;
                     showFloatingText(this.x, this.y, '無敵化!', 'text-yellow-400');
-                    setTimeout(() => { this.isInvincible = false; this.updateUI(); }, 3000);
+                    scheduleTimeout(() => { this.isInvincible = false; this.updateUI(); }, 3000, this);
                     return;
                 }
 
@@ -832,10 +933,11 @@
                 }
                 
                 if (this.listItemElement && !this.isMinion) {
+                    this.updateListItemHTML(this.listItemElement, SKILLS.find(skill => skill.id === this.skill) || SKILLS[0]);
                     this.listItemElement.classList.add('opacity-50', 'grayscale');
                     this.listItemElement.querySelector('.font-bold').classList.add('line-through');
                 }
-                checkWinCondition();
+                // 勝敗は全員の死亡・分裂処理を終えたフレーム末に判定する。
             }
 
             normalizeSpeed() {
@@ -1015,14 +1117,14 @@
                     if (activeSkill === 'underground' && this.checkCooldown('under', 7000)) {
                         this.isUnderground = true;
                         createEffect('effect-text text-amber-900', this.x, this.y, '🕳️', 500);
-                        setTimeout(() => {
+                        scheduleTimeout(() => {
                             if(!this.isAlive) return;
                             this.isUnderground = false;
                             this.checkWallCollision();
                             this.updatePosition();
                             createEffect('effect-text text-amber-900', this.x, this.y, '💥', 500, 'font-size:40px;');
                             characters.forEach(c => { if(c.isAlive && c.teamId !== this.teamId && getDistance(this, c)<80) c.takeDamage(this.atk*2, false, this); });
-                        }, 4000);
+                        }, 4000, this);
                     }
 
                     if (activeSkill === 'random_lightning' && this.checkCooldown('lightning', 2000)) {
@@ -1091,8 +1193,8 @@
                     if (activeSkill === 'rainbow_beam' && this.checkCooldown('beam', 6000)) {
                         const repeat = isWizardMagic ? 1 : 3;
                         let rCount = 0;
-                        const rInt = setInterval(() => {
-                            if (!this.isAlive || rCount++ >= repeat || !isPlaying) return clearInterval(rInt);
+                        const rInt = scheduleInterval(() => {
+                            if (!this.isAlive || rCount++ >= repeat || !isPlaying) return simulationTimers.delete(rInt);
                             const angle = Math.atan2(this.vy, this.vx);
                             createEffect('beam-effect', this.x, this.y, '', 600, `width:1000px; height:40px; background:linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet); transform: translateY(-50%) rotate(${angle * 180 / Math.PI}deg);`);
                             characters.forEach(c => {
@@ -1105,7 +1207,7 @@
                                     }
                                 }
                             });
-                        }, 300);
+                        }, 300, this);
                     }
                     
                     if (activeSkill === 'homing_laser' && this.checkCooldown('homing', 2500)) {
@@ -1119,8 +1221,8 @@
                         this.stunEndTime = gameTime + 1000;
                         this.sonicInvincibleEndTime = gameTime + 1000;
                         let count = 0;
-                        const interval = setInterval(() => {
-                            if (!this.isAlive || count >= 5 || !isPlaying) return clearInterval(interval);
+                        const interval = scheduleInterval(() => {
+                            if (!this.isAlive || count >= 5 || !isPlaying) return simulationTimers.delete(interval);
                             createEffect('zone border-4 border-teal-300', this.x, this.y, '', 400, 'width: 300px; height: 300px; transition: width 0.4s, height 0.4s;');
                             characters.forEach(c => {
                                 if (c.isAlive && c.teamId !== this.teamId && getDistance(this, c) < 150) {
@@ -1131,7 +1233,7 @@
                                 }
                             });
                             count++;
-                        }, 200);
+                        }, 200, this);
                     }
                     
                     if (activeSkill === 'water_push' && this.checkCooldown('water', 4000)) {
@@ -1183,8 +1285,8 @@
                     if (activeSkill === 'freeze_aura' && this.checkCooldown('freeze', 7000)) {
                         const repeat = isWizardMagic ? 1 : 3;
                         let rCount = 0;
-                        const rInt = setInterval(() => {
-                            if (!this.isAlive || rCount++ >= repeat || !isPlaying) return clearInterval(rInt);
+                        const rInt = scheduleInterval(() => {
+                            if (!this.isAlive || rCount++ >= repeat || !isPlaying) return simulationTimers.delete(rInt);
                             createEffect('zone bg-cyan-200 opacity-50', this.x, this.y, '', 300, 'width: 240px; height: 240px;');
                             characters.forEach(c => {
                                 if (c.isAlive && c.teamId !== this.teamId && c.skill !== 'nullify' && getDistance(this, c) < 120) { 
@@ -1193,7 +1295,7 @@
                                     this.triggerWeaponHeal();
                                 }
                             });
-                        }, 400);
+                        }, 400, this);
                     }
                     
                     if (activeSkill === 'chain_bind' && this.checkCooldown('chain', 8000)) {
@@ -1209,7 +1311,7 @@
                     if (activeSkill === 'time_stop' && this.checkCooldown('timestop', 15000)) {
                         timeStopState = { active: true, ownerTeam: this.teamId, endTime: gameTime + 3000 };
                         ui.timeStopOverlay.classList.remove('hidden');
-                        setTimeout(() => ui.timeStopOverlay.classList.add('hidden'), 3000);
+
                     }
                     
                     if (activeSkill === 'time_slow' && this.checkCooldown('timeslow', 12000)) {
@@ -1347,7 +1449,7 @@
                 
                 if (this.skill === 'seven_attacks') {
                     for (let i = 1; i < 7; i++) {
-                        setTimeout(() => { if(target.isAlive && this.isAlive) target.takeDamage(damage*0.8, false, this, this.skill === 'nullify'); }, 100 * i);
+                        scheduleTimeout(() => { if(target.isAlive && this.isAlive) target.takeDamage(damage*0.8, false, this, this.skill === 'nullify'); }, 100 * i, this);
                     }
                     this.sevenAttackCount++;
                     if (this.sevenAttackCount >= 7) {
@@ -1546,7 +1648,7 @@
                         const minDist = this.radius + c.radius;
                         if(d < minDist) {
                             const overlap = minDist - d;
-                            const nx = (c.x - this.x) / d; const ny = (c.y - this.y) / d;
+                            const nx = d > 0 ? (c.x - this.x) / d : 1; const ny = d > 0 ? (c.y - this.y) / d : 0;
                             c.x += nx * overlap; c.y += ny * overlap;
                         }
                     }
@@ -1588,10 +1690,14 @@
             const inputText = ui.nameInput.value.trim();
             if (!inputText) return false;
 
-            let names = inputText.split(/[,\n、]/).map(n => n.trim()).filter(n => n.length > 0);
-            names = [...new Set(names)].slice(0, MAX_PLAYERS);
+            const names = parseNames(inputText);
+            if (names.length > MAX_PLAYERS) return false;
             
             if (names.length < 2) return false;
+            clearTimeout(debounceTimer);
+            clearTimeout(resultTimer);
+            simulationTimers.clear();
+            lastSortTime = 0;
 
             ui.battlefield.innerHTML = `
                 <div id="battlefield-floor"></div>
@@ -1607,7 +1713,7 @@
             zones = [];
             charIdCounter = 0;
 
-            const globalSeed = cyrb53([...names].sort().join(''));
+            const globalSeed = cyrb53(JSON.stringify([...names].sort()));
             let skillPool = [...SKILLS.filter(s => s.id !== 'none')];
             
             names.forEach((name) => {
@@ -1647,6 +1753,8 @@
                 ui.timeStopOverlay.classList.add('hidden');
 
                 gameTime = 0;
+                updateGameTimeDisplay();
+                saveSettings();
                 currentBattlefieldRadius = BATTLEFIELD_SIZE / 2;
                 ui.battlefieldBg.style.width = `${BATTLEFIELD_SIZE}px`;
                 ui.battlefieldBg.style.height = `${BATTLEFIELD_SIZE}px`;
@@ -1657,12 +1765,12 @@
                 ui.editorPanel.classList.add('hidden');
                 ui.pauseBtn.disabled = false;
                 ui.pauseBtn.textContent = '一時停止';
+                ui.pauseBtn.className = 'px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded shadow';
                 ui.stopBtn.classList.remove('hidden');
                 ui.shuffleBtn.disabled = true; 
                 isPlaying = true;
 
-                if (gameLoopId) clearInterval(gameLoopId);
-                gameLoopId = setInterval(gameLoop, TICK_RATE);
+                startLoop();
                 resizeBattlefield();
             } catch (e) {
                 console.error("Game Start Error:", e);
@@ -1672,9 +1780,11 @@
 
         let debounceTimer;
         ui.nameInput.addEventListener('input', () => {
+            updateInputStatus();
+            saveSettings();
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
-                prepareGame();
+                if (!ui.startOverlay.classList.contains('hidden')) prepareGame();
             }, 300);
         });
 
@@ -1682,6 +1792,7 @@
             if (!isPlaying) return;
 
             gameTime += TICK_RATE;
+            runSimulationTimers();
             updateGameTimeDisplay();
             globalSpikesActive = false; 
 
@@ -1756,9 +1867,9 @@
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     const minDist = c1.radius + c2.radius;
 
-                    if (dist < minDist && dist > 0) {
+                    if (dist < minDist) {
                         const overlap = minDist - dist;
-                        const nx = dx / dist; const ny = dy / dist;
+                        const nx = dist > 0 ? dx / dist : 1; const ny = dist > 0 ? dy / dist : 0;
                         c1.x -= nx * overlap / 2; c1.y -= ny * overlap / 2;
                         c2.x += nx * overlap / 2; c2.y += ny * overlap / 2;
 
@@ -1786,6 +1897,7 @@
             }
             
             updateListOrder();
+            checkWinCondition();
         }
 
         function updateGameTimeDisplay() {
@@ -1823,10 +1935,14 @@
 
         function finishGame(winner) {
             isPlaying = false;
-            clearInterval(gameLoopId);
+            stopLoop();
+            simulationTimers.clear();
+            ui.pauseBtn.disabled = true;
+            ui.editorPanel.classList.add('hidden');
             ui.stopBtn.classList.add('hidden'); 
             
-            setTimeout(() => {
+            clearTimeout(resultTimer);
+            resultTimer = setTimeout(() => {
                 ui.gameOverOverlay.classList.remove('hidden');
                 if (winner) {
                     ui.winnerDisplay.textContent = winner.avatar;
@@ -1881,13 +1997,18 @@
             const char = characters.find(c => c.id === editingCharId);
             if (!char) return;
 
+            const values = [ui.editAtk.value, ui.editMaxHp.value, ui.editSpd.value].map(Number);
+            if (values.some(v => !Number.isFinite(v) || v <= 0) || values[2] > 200) {
+                alert('攻撃力・体力・速度には正の数を入力してください。速度の上限は200です。');
+                return;
+            }
             const oldMaxHp = char.maxHp;
             const oldSkill = char.skill;
             
-            char.atk = parseFloat(ui.editAtk.value) || 1;
-            let editedMaxHp = parseInt(ui.editMaxHp.value) || 1000;
+            char.atk = values[0];
+            let editedMaxHp = Math.max(1, Math.round(values[1]));
             // エディタからの入力も最大値200で制限
-            char.speed = Math.min(parseFloat(ui.editSpd.value) || 1.0, 200);
+            char.speed = values[2];
             const newSkill = ui.editSkill.value;
             
             if (!SUPPORT_SKILLS.includes(oldSkill) && SUPPORT_SKILLS.includes(newSkill)) {
@@ -1903,8 +2024,22 @@
             
             char.maxHp = editedMaxHp;
             char.skill = newSkill;
+            if (oldSkill === 'extra_life' && newSkill !== 'extra_life') char.maxHp /= 0.8;
+            if (newSkill === 'extra_life' && oldSkill !== 'extra_life') char.maxHp *= 0.8;
+            if (oldSkill === 'bike_ride' && newSkill !== 'bike_ride') char.speed /= 1.5;
+            if (newSkill === 'bike_ride' && oldSkill !== 'bike_ride') char.speed *= 1.5;
+            char.speed = Math.min(char.speed, 200);
+            if (newSkill !== oldSkill) {
+                char.shield = newSkill === 'shield' ? char.maxHp * 0.5 : 0;
+                char.maxShield = char.shield;
+                char.bikeHp = newSkill === 'bike_ride' ? char.maxHp * 1.5 : 0;
+                char.avatar = newSkill === 'bike_ride' ? '🏍️' : AVATARS[Math.floor(mulberry32(cyrb53(char.name, cyrb53(JSON.stringify(parseNames(ui.nameInput.value).sort()))))() * AVATARS.length)];
+                char.isUnderground = false;
+                char.isInvincible = false;
+                char.lastSkills = {};
+            }
             char.isFlying = (newSkill === 'flying');
-            char.hasExtraLife = (newSkill === 'extra_life');
+            if (newSkill !== oldSkill) char.hasExtraLife = (newSkill === 'extra_life');
 
             customStats.set(char.name, {
                 atk: char.atk,
@@ -1916,7 +2051,10 @@
             if (char.maxHp > oldMaxHp) char.hp += (char.maxHp - oldMaxHp);
             else if (char.hp > char.maxHp) char.hp = char.maxHp;
 
+            saveSettings();
+            if (char.element) char.element.firstChild.textContent = `\n                    ${char.avatar}\n                    `;
             char.normalizeSpeed();
+            char.lastListUpdate = -Infinity;
             char.updateUI();
             ui.editorPanel.classList.add('hidden');
         }
@@ -1928,7 +2066,9 @@
             resizeBattlefield();
         });
         ui.pauseBtn.addEventListener('click', () => {
+            if (ui.pauseBtn.disabled) return;
             isPlaying = !isPlaying;
+            if (isPlaying) startLoop(); else stopLoop();
             ui.pauseBtn.textContent = isPlaying ? '一時停止' : '再開';
             ui.pauseBtn.className = isPlaying 
                 ? 'px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded shadow'
@@ -1936,7 +2076,11 @@
         });
         ui.stopBtn.addEventListener('click', () => {
             isPlaying = false;
-            if (gameLoopId) clearInterval(gameLoopId);
+            stopLoop();
+            clearTimeout(resultTimer);
+            simulationTimers.clear();
+            clearTimeout(debounceTimer);
+            ui.timeStopOverlay.classList.add('hidden');
             ui.battlefield.classList.add('hidden');
             ui.startOverlay.classList.remove('hidden');
             ui.editorPanel.classList.add('hidden');
@@ -1948,8 +2092,8 @@
         ui.shuffleBtn.addEventListener('click', () => {
             const inputText = ui.nameInput.value.trim();
             if (!inputText) return;
-            let names = inputText.split(/[,\n、]/).map(n => n.trim()).filter(n => n.length > 0);
-            names = [...new Set(names)].slice(0, MAX_PLAYERS);
+            const names = parseNames(inputText);
+            if (names.length > MAX_PLAYERS) return false;
             if (names.length < 2) return;
             
             let availableSkills = [...SKILLS.filter(s => s.id !== 'none')];
@@ -1975,6 +2119,7 @@
                 customStats.set(name, { atk: atk, maxHp: finalMaxHp, speed: speed, skill: skill });
             });
             
+            saveSettings();
             prepareGame();
             
             characters.forEach(c => {
@@ -1988,10 +2133,38 @@
         });
         ui.saveEditBtn.addEventListener('click', saveEditor);
 
+        document.getElementById('speed-select').addEventListener('change', e => {
+            playbackSpeed = Number(e.target.value);
+        });
+        document.getElementById('sample-btn').addEventListener('click', () => {
+            ui.nameInput.value = SAMPLE_NAMES;
+            updateInputStatus(); saveSettings(); prepareGame();
+        });
+        document.getElementById('reset-stats-btn').addEventListener('click', () => {
+            customStats.clear(); saveSettings(); prepareGame();
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && isPlaying) ui.pauseBtn.click();
+        });
+        document.addEventListener('keydown', e => {
+            if (e.target.closest('input, textarea, select, button')) return;
+            if (e.code === 'Space' && !ui.pauseBtn.disabled) { e.preventDefault(); ui.pauseBtn.click(); }
+            if (e.code === 'Escape') ui.closeEditorBtn.click();
+        });
         window.onload = () => {
-            ui.nameInput.value = "勇者, 魔王, ドラゴン, スライム, 魔法使い, アサシン, 忍者, 狂戦士, ゴーレム, 妖精, 吸血鬼, ゾンビ, 剣士, 弓兵, 僧侶, 盗賊, 召喚士, 竜騎士, 暗黒騎士, 聖騎士";
-            prepareGame();
-            resizeBattlefield();
+            ui.nameInput.value = SAMPLE_NAMES;
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+                if (saved && typeof saved.names === 'string') ui.nameInput.value = saved.names;
+                if (saved && Array.isArray(saved.stats)) {
+                    for (const entry of saved.stats) {
+                        if (!Array.isArray(entry) || entry.length !== 2) continue;
+                        const [name, stats] = entry;
+                        if (typeof name === 'string' && stats && [stats.atk, stats.maxHp, stats.speed].every(v => Number.isFinite(v) && v > 0) && stats.speed <= 200 && SKILLS.some(skill => skill.id === stats.skill)) customStats.set(name, stats);
+                    }
+                }
+            } catch (error) { console.warn('保存設定を読み込めませんでした', error); }
+            updateInputStatus(); prepareGame(); resizeBattlefield();
         };
 
     </script>
